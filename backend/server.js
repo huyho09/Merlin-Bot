@@ -1,10 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ path: './.env' });
 const express = require('express');
 const cors = require('cors');
 const { OpenAI } = require('openai');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 2138; // Changed to 2138
 
 // Middleware
 app.use(cors()); // Allow all CORS
@@ -12,11 +12,11 @@ app.use(express.json());
 
 // Initialize OpenAI with API key from environment
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: "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"
 });
 
 // Serve static files from client directory
-app.use(express.static('../client'));
+app.use(express.static('../frontend'));
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {

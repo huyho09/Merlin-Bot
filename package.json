@@ -2,9 +2,11 @@
   "name": "chatbot-clone",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "backend/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node backend/server.js",
+    "dev": "vite"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +16,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "openai": "^4.87.3"
+  },
+  "devDependencies": {
+    "vite": "^6.2.1"
   }
 }
