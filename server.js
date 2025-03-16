@@ -1,13 +1,14 @@
+const path = require('path');
+require('dotenv').config({ path: __dirname + '/.env' });
 const express = require('express');
-const { Configuration, OpenAIApi } = require('openai');
+const { default: OpenAI } = require('openai');
 
 const app = express();
 
-const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({
+    apiKey: "OPENAI_API_KEY"
 });
 
-const openai = new OpenAIApi(configuration);
 
 app.use(express.json());
 app.use(express.static(__dirname));
