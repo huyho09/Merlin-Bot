@@ -1,65 +1,59 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, './.env') });
+
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-const axios = require('axios');
+const { OpenAI } = require('openai');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors()); // Allow all CORS
-app.use(bodyParser.json());
+app.use(express.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+//const apiKey = process.env.OPENAI_API_KEY;
+// Initialize OpenAI with API key from environment
+console.log('API Key:', process.env.OPENAI_API_KEY);
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
-// Store chat history in memory
-let chatHistory = {};
+// Serve static files from client directory
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-app.post('/chat', async (req, res) => {
-    const { chatId, message } = req.body;
-    
-    if (!chatId || !message) {
-        return res.status(400).json({ error: 'Chat ID and message are required' });
-    }
-
-    if (!chatHistory[chatId]) {
-        chatHistory[chatId] = [];
-    }
-
-    chatHistory[chatId].push({ role: 'user', content: message });
-
+// Chat endpoint
+app.post('/api/chat', async (req, res) => {
     try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-4o',
-                messages: chatHistory[chatId],
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        const { message, chatHistory } = req.body;
 
-        const botReply = response.data.choices[0].message.content;
-        chatHistory[chatId].push({ role: 'assistant', content: botReply });
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
 
-        res.json({ reply: botReply });
+        // Prepare messages array including history
+        const messages = [
+            { role: 'system', content: 'You are a helpful AI assistant similar to Grok.' },
+            ...chatHistory,
+            { role: 'user', content: message }
+        ];
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 1000
+        });
+
+        const aiResponse = response.choices[0].message.content;
+        res.json({ response: aiResponse });
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to fetch response' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// New Chat
-app.post('/new-chat', (req, res) => {
-    const chatId = `chat_${Date.now()}`;
-    chatHistory[chatId] = [];
-    res.json({ chatId });
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });
