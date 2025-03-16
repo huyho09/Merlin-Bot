@@ -1,0 +1,8 @@
+[build]
+  command = "vite build"
+  publish = "dist"
+  functions = "functions"
+
+[functions]
+  [functions.api]
+    path = "/api"
