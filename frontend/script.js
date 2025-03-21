@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {
@@ -141,11 +141,11 @@ class ChatApp {
             div.textContent = msg.content;
             this.chatMessages.appendChild(div);
         });
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight; // Auto-scroll to bottom
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 }
 
-// Initialize the app when the DOM is fully loaded
+
 document.addEventListener('DOMContentLoaded', () => {
     new ChatApp();
 });
