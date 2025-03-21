@@ -1,4 +1,5 @@
-\body {
+/* Existing styles remain unchanged */
+body {
     height: 100vh;
     margin: 0;
     padding: 0;
@@ -60,4 +61,22 @@
 .active-chat {
     background-color: #007bff;
     color: white;
+}
+
+/* New styles for Markdown elements in AI messages */
+.ai-message p {
+    margin: 0 0 10px 0; /* Spacing between paragraphs */
+}
+
+.ai-message strong {
+    font-weight: bold; /* Bold text */
+}
+
+.ai-message ul, .ai-message ol {
+    margin: 0 0 10px 20px; /* Indent lists */
+    padding: 0;
+}
+
+.ai-message li {
+    margin: 5px 0; /* Spacing between list items */
 }

@@ -132,13 +132,19 @@ class ChatApp {
         });
     }
 
-    renderMessages() {
+    rrenderMessages() {
         this.chatMessages.innerHTML = '';
         const messages = this.chats.get(this.currentChatId) || [];
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`;
-            div.textContent = msg.content;
+            if (msg.role === 'assistant') {
+                // Convert Markdown to HTML for AI responses
+                div.innerHTML = marked.parse(msg.content);
+            } else {
+                // Keep user messages as plain text
+                div.textContent = msg.content;
+            }
             this.chatMessages.appendChild(div);
         });
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
