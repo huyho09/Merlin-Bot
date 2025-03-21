@@ -7,7 +7,7 @@ class ChatApp {
         this.initializeElements();
         this.bindEvents();
         this.loadChats();
-        this.sendMessage = this.sendMessage.bind(this); // Ensure binding
+        this.sendMessage = this.sendMessage.bind(this);
     }
 
     initializeElements() {
@@ -16,6 +16,9 @@ class ChatApp {
         this.sendMessageBtn = document.getElementById('sendMessage');
         this.newChatBtn = document.getElementById('newChat');
         this.chatHistory = document.getElementById('chatHistory');
+        this.sidebar = document.getElementById('sidebar');
+        this.showSidebarBtn = document.getElementById('showSidebar');
+        this.toggleSidebarBtn = document.getElementById('toggleSidebar');
     }
 
     bindEvents() {
@@ -26,6 +29,13 @@ class ChatApp {
                 e.preventDefault();
                 this.sendMessage();
             }
+        });
+        // Sidebar toggle for mobile
+        this.showSidebarBtn.addEventListener('click', () => {
+            this.sidebar.classList.add('active');
+        });
+        this.toggleSidebarBtn.addEventListener('click', () => {
+            this.sidebar.classList.remove('active');
         });
     }
 
@@ -92,7 +102,6 @@ class ChatApp {
         this.renderMessages();
         this.userInput.value = '';
 
-        // Add thinking message
         const thinkingMessage = { role: 'assistant', content: '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>', isThinking: true };
         this.chats.get(this.currentChatId).push(thinkingMessage);
         this.renderMessages();
@@ -109,7 +118,6 @@ class ChatApp {
                 throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
             }
             const data = await response.json();
-            // Remove thinking message
             const chat = this.chats.get(this.currentChatId);
             const thinkingIndex = chat.findIndex(msg => msg.isThinking);
             if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
@@ -123,7 +131,6 @@ class ChatApp {
             this.renderMessages();
         } catch (error) {
             console.error('Error sending message:', error);
-            // Remove thinking message
             const chat = this.chats.get(this.currentChatId);
             const thinkingIndex = chat.findIndex(msg => msg.isThinking);
             if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
@@ -142,6 +149,8 @@ class ChatApp {
                 this.currentChatId = chatId;
                 this.renderChatHistory();
                 this.renderMessages();
+                // Hide sidebar on mobile after selection
+                if (window.innerWidth < 768) this.sidebar.classList.remove('active');
             });
             this.chatHistory.appendChild(item);
         });
