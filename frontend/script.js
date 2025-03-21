@@ -7,6 +7,7 @@ class ChatApp {
         this.initializeElements();
         this.bindEvents();
         this.loadChats();
+        this.sendMessage = this.sendMessage.bind(this); // Ensure binding
     }
 
     initializeElements() {
@@ -91,6 +92,11 @@ class ChatApp {
         this.renderMessages();
         this.userInput.value = '';
 
+        // Add thinking message
+        const thinkingMessage = { role: 'assistant', content: '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>', isThinking: true };
+        this.chats.get(this.currentChatId).push(thinkingMessage);
+        this.renderMessages();
+
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/messages`, {
                 method: 'POST',
@@ -103,6 +109,11 @@ class ChatApp {
                 throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
             }
             const data = await response.json();
+            // Remove thinking message
+            const chat = this.chats.get(this.currentChatId);
+            const thinkingIndex = chat.findIndex(msg => msg.isThinking);
+            if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
+            
             if (data.error) {
                 this.chats.get(this.currentChatId).push({ role: 'assistant', content: 'Sorry, an error occurred.' });
             } else {
@@ -112,6 +123,10 @@ class ChatApp {
             this.renderMessages();
         } catch (error) {
             console.error('Error sending message:', error);
+            // Remove thinking message
+            const chat = this.chats.get(this.currentChatId);
+            const thinkingIndex = chat.findIndex(msg => msg.isThinking);
+            if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
             this.chats.get(this.currentChatId).push({ role: 'assistant', content: 'Sorry, an error occurred.' });
             this.renderMessages();
         }
@@ -122,7 +137,7 @@ class ChatApp {
         this.chats.forEach((_, chatId) => {
             const item = document.createElement('div');
             item.className = `list-group-item ${chatId === this.currentChatId ? 'active-chat' : ''}`;
-            item.textContent = `Chat ${chatId.slice(-4)}`; // Display last 4 digits of chat ID
+            item.textContent = `Chat ${chatId.slice(-4)}`;
             item.addEventListener('click', () => {
                 this.currentChatId = chatId;
                 this.renderChatHistory();
@@ -132,25 +147,22 @@ class ChatApp {
         });
     }
 
-    rrenderMessages() {
+    renderMessages() {
         this.chatMessages.innerHTML = '';
         const messages = this.chats.get(this.currentChatId) || [];
         messages.forEach(msg => {
             const div = document.createElement('div');
-            div.className = `message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`;
-            if (msg.role === 'assistant') {
-                // Convert Markdown to HTML for AI responses
+            div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
+            if (msg.role === 'assistant' && !msg.isThinking) {
                 div.innerHTML = marked.parse(msg.content);
             } else {
-                // Keep user messages as plain text
-                div.textContent = msg.content;
+                div.innerHTML = msg.content;
             }
             this.chatMessages.appendChild(div);
         });
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 }
-
 
 document.addEventListener('DOMContentLoaded', () => {
     new ChatApp();

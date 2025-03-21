@@ -63,20 +63,44 @@ body {
     color: white;
 }
 
-/* New styles for Markdown elements in AI messages */
-.ai-message p {
-    margin: 0 0 10px 0; /* Spacing between paragraphs */
+/* New styles for bouncing dots */
+.thinking-message {
+    background-color: #e9ecef;
+    color: black;
+    margin-right: auto;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 70%;
+    display: flex;
+    align-items: center;
 }
 
-.ai-message strong {
-    font-weight: bold; /* Bold text */
+.thinking-message .dots {
+    display: inline-flex;
 }
 
-.ai-message ul, .ai-message ol {
-    margin: 0 0 10px 20px; /* Indent lists */
-    padding: 0;
+.thinking-message .dot {
+    width: 8px;
+    height: 8px;
+    background-color: #666;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce 0.6s infinite alternate;
 }
 
-.ai-message li {
-    margin: 5px 0; /* Spacing between list items */
+.thinking-message .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.thinking-message .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-10px);
+    }
 }
