@@ -1,4 +1,8 @@
-const API_BASE = 'https://chatbot-clone-1.onrender.com';
+//Use for PROD 
+const API_BASE = 'https://chatbot-clone-1.onrender.com'; 
+
+// Local Test
+//const API_BASE = 'http://localhost:3000'; 
 
 class ChatApp {
     constructor() {
@@ -7,7 +11,6 @@ class ChatApp {
         this.initializeElements();
         this.bindEvents();
         this.loadChats();
-        this.sendMessage = this.sendMessage.bind(this);
     }
 
     initializeElements() {
@@ -19,6 +22,9 @@ class ChatApp {
         this.sidebar = document.getElementById('sidebar');
         this.showSidebarBtn = document.getElementById('showSidebar');
         this.toggleSidebarBtn = document.getElementById('toggleSidebar');
+        this.uploadPdfBtn = document.getElementById('uploadPdfBtn');
+        this.pdfInput = document.getElementById('pdfInput');
+        this.uploadedPdfsDiv = document.getElementById('uploadedPdfs');
     }
 
     bindEvents() {
@@ -30,13 +36,14 @@ class ChatApp {
                 this.sendMessage();
             }
         });
-        // Sidebar toggle for mobile
         this.showSidebarBtn.addEventListener('click', () => {
             this.sidebar.classList.add('active');
         });
         this.toggleSidebarBtn.addEventListener('click', () => {
             this.sidebar.classList.remove('active');
         });
+        this.uploadPdfBtn.addEventListener('click', () => this.pdfInput.click());
+        this.pdfInput.addEventListener('change', () => this.uploadPdfs());
     }
 
     async loadChats() {
@@ -48,7 +55,6 @@ class ChatApp {
                 throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
             }
             const chatsData = await response.json();
-            console.log('Chats data:', chatsData);
             const chatIds = chatsData.map(chat => chat.id);
             const histories = await Promise.all(
                 chatIds.map(id => fetch(`${API_BASE}/api/chats/${id}`).then(res => {
@@ -59,15 +65,16 @@ class ChatApp {
                 }))
             );
             for (let i = 0; i < chatIds.length; i++) {
-                this.chats.set(chatIds[i].toString(), histories[i]);
+                this.chats.set(chatIds[i], histories[i]);
             }
             if (this.chats.size > 0) {
-                this.currentChatId = Array.from(this.chats.keys())[0];
+                this.currentChatId = chatIds[0];
+                this.renderChatHistory();
+                this.renderMessages();
+                this.renderUploadedPdfs();
             } else {
                 await this.createNewChat();
             }
-            this.renderChatHistory();
-            this.renderMessages();
         } catch (error) {
             console.error('Error loading chats:', error);
         }
@@ -82,35 +89,93 @@ class ChatApp {
                 throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
             }
             const data = await response.json();
-            const chatId = data.id.toString();
-            this.chats.set(chatId, []);
+            const chatId = data.id;
+            const chatResponse = await fetch(`${API_BASE}/api/chats/${chatId}`);
+            if (!chatResponse.ok) {
+                throw new Error(`Failed to fetch new chat ${chatId}: ${chatResponse.status}`);
+            }
+            const chatData = await chatResponse.json();
+            this.chats.set(chatId, chatData);
             this.currentChatId = chatId;
             this.renderChatHistory();
             this.renderMessages();
+            this.renderUploadedPdfs();
             this.userInput.focus();
         } catch (error) {
             console.error('Error creating new chat:', error);
         }
     }
 
+    async uploadPdfs() {
+        const files = this.pdfInput.files;
+        if (files.length === 0 || !this.currentChatId) return;
+    
+        const maxSize = 10 * 1024 * 1024; // 10 MB, matches MAX_PDF_SIZE in main.py
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].size > maxSize) {
+                alert(`File ${files[i].name} exceeds 10 MB limit. Please upload smaller files.`);
+                return;
+            }
+        }
+    
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('pdfs', files[i]);
+        }
+    
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/upload-pdfs`, {
+                method: 'POST',
+                body: formData
+            });
+            console.log('Upload PDFs response status:', response.status);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            const currentChat = this.chats.get(this.currentChatId);
+            if (currentChat) {
+                currentChat.uploaded_pdfs = data.uploaded_pdfs;
+            }
+            this.renderUploadedPdfs();
+        } catch (error) {
+            console.error('Error uploading PDFs:', error);
+            this.chats.get(this.currentChatId).messages.push({ role: 'assistant', content: `Error uploading PDFs: ${error.message}` });
+            this.renderMessages();
+        }
+        this.pdfInput.value = ''; // Reset file input
+    }
+    
     async sendMessage() {
         const userInput = this.userInput.value.trim();
         if (userInput === '' || !this.currentChatId) return;
-
+    
         const userMessage = { role: 'user', content: userInput };
-        this.chats.get(this.currentChatId).push(userMessage);
+        this.chats.get(this.currentChatId).messages.push(userMessage);
         this.renderMessages();
         this.userInput.value = '';
-
+    
         const thinkingMessage = { role: 'assistant', content: '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>', isThinking: true };
-        this.chats.get(this.currentChatId).push(thinkingMessage);
+        this.chats.get(this.currentChatId).messages.push(thinkingMessage);
         this.renderMessages();
-
+    
+        const formData = new FormData();
+        formData.append('message', userInput);
+        const currentChat = this.chats.get(this.currentChatId);
+        if (currentChat && currentChat.uploaded_pdfs && currentChat.uploaded_pdfs.length > 0) {
+            const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`);
+            if (!pdfResponse.ok) {
+                throw new Error(`Failed to fetch PDFs: ${pdfResponse.status}`);
+            }
+            const pdfData = await pdfResponse.json();
+            formData.append('pdf_text', pdfData.pdf_text);
+        }
+    
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userInput })
+                body: formData
             });
             console.log('Send message response status:', response.status);
             if (!response.ok) {
@@ -119,22 +184,22 @@ class ChatApp {
             }
             const data = await response.json();
             const chat = this.chats.get(this.currentChatId);
-            const thinkingIndex = chat.findIndex(msg => msg.isThinking);
-            if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
-            
+            const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
+            if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
+    
             if (data.error) {
-                this.chats.get(this.currentChatId).push({ role: 'assistant', content: 'Sorry, an error occurred.' });
+                chat.messages.push({ role: 'assistant', content: `Sorry, an error occurred: ${data.error}` });
             } else {
                 const aiResponse = { role: 'assistant', content: data.response };
-                this.chats.get(this.currentChatId).push(aiResponse);
+                chat.messages.push(aiResponse);
             }
             this.renderMessages();
         } catch (error) {
             console.error('Error sending message:', error);
             const chat = this.chats.get(this.currentChatId);
-            const thinkingIndex = chat.findIndex(msg => msg.isThinking);
-            if (thinkingIndex !== -1) chat.splice(thinkingIndex, 1);
-            this.chats.get(this.currentChatId).push({ role: 'assistant', content: 'Sorry, an error occurred.' });
+            const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
+            if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
+            chat.messages.push({ role: 'assistant', content: `Sorry, an error occurred: ${error.message}` });
             this.renderMessages();
         }
     }
@@ -149,7 +214,7 @@ class ChatApp {
                 this.currentChatId = chatId;
                 this.renderChatHistory();
                 this.renderMessages();
-                // Hide sidebar on mobile after selection
+                this.renderUploadedPdfs();
                 if (window.innerWidth < 768) this.sidebar.classList.remove('active');
             });
             this.chatHistory.appendChild(item);
@@ -158,7 +223,7 @@ class ChatApp {
 
     renderMessages() {
         this.chatMessages.innerHTML = '';
-        const messages = this.chats.get(this.currentChatId) || [];
+        const messages = this.chats.get(this.currentChatId)?.messages || [];
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
@@ -170,6 +235,18 @@ class ChatApp {
             this.chatMessages.appendChild(div);
         });
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    renderUploadedPdfs() {
+        this.uploadedPdfsDiv.innerHTML = '';
+        const currentChat = this.chats.get(this.currentChatId);
+        if (currentChat && currentChat.uploaded_pdfs) {
+            currentChat.uploaded_pdfs.forEach(pdf => {
+                const p = document.createElement('p');
+                p.textContent = pdf;
+                this.uploadedPdfsDiv.appendChild(p);
+            });
+        }
     }
 }
 
