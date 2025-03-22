@@ -11,10 +11,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Allow all origins
 
-# In-memory storage for chats
+# In-memory (RAM) storage for chats need. TODO: create a DB to save
 chats = {}
 
-# Initialize OpenAI client
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route('/api/chats', methods=['GET'])

@@ -97,13 +97,13 @@ This is a web-based chat application inspired by ChatGPT and Grok, featuring a u
   - Confirm the key is set (`echo $OPENAI_API_KEY`) before running `main.py`.
 
 ## Future Improvements
-- **Persistent Storage**: Replace the in-memory `chats` dictionary with a database (e.g., SQLite or PostgreSQL) to save chat history across restarts.
-- **User Authentication**: Add login functionality to support multiple users with private chat histories.
-- **UI Enhancements**: Implement message editing, deletion, or a loading indicator for AI responses.
-- **Better Error Handling**: Display user-friendly error messages on the front end for network or API issues.
-- **Model Options**: Allow users to select different OpenAI models (e.g., `gpt-4`) or adjust parameters like temperature.
-- **Rate Limiting**: Add rate limiting on the backend to prevent API abuse.
-- **Token Management**: Handle long conversations by truncating or summarizing older messages to stay within OpenAI’s token limits.
+- [ ] **Persistent Storage**: Replace the in-memory `chats` dictionary with a database (e.g., SQLite or PostgreSQL) to save chat history across restarts.
+- [ ] **User Authentication**: Add login functionality to support multiple users with private chat histories.
+- [ ] **UI Enhancements**: Implement message editing, deletion, or a loading indicator for AI responses.
+- [ ] **Better Error Handling**: Display user-friendly error messages on the front end for network or API issues.
+- [ ] **Model Options**: Allow users to select different OpenAI models (e.g., `gpt-4`) or adjust parameters like temperature.
+- [ ] **Rate Limiting**: Add rate limiting on the backend to prevent API abuse.
+- [ ] **Token Management**: Handle long conversations by truncating or summarizing older messages to stay within OpenAI’s token limits.
 
 ## Notes
 - The backend uses `GPT-4o` by default
@@ -113,21 +113,3 @@ For additional support, refer to:
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs/)
 ```
-
----
-
-### Explanation
-- **Project Description**: Highlights the ChatGPT/Grok-like interface and AI integration.
-- **Structure**: Lists all files, matching your setup with `main.py` as the backend.
-- **Setup Instructions**: Detailed steps for both backend and front end, including how to handle the OpenAI API key (addressing your earlier error).
-- **Usage**: Simple guide for interacting with the app.
-- **Troubleshooting**: Covers common issues like port conflicts (your "Address already in use" error) and the 403 error, with actionable fixes.
-- **Future Improvements**: Offers practical suggestions like persistence and authentication, fulfilling your request for enhancement ideas.
-- **Notes**: Includes additional context for customization and production considerations.
-
-### How to Use
-1. Save this as `README.md` in your project root (e.g., `/Users/huyho/Documents/Documents-HuyMacBookPro/Projects/chatbot-clone/`).
-2. Follow the setup steps to ensure everything runs smoothly.
-3. Refer to the troubleshooting section if you hit issues like port conflicts or 403 errors again.
-
-This README should serve as a complete guide for your project, helping you or others set it up and improve it over time. Let me know if you’d like adjustments!
