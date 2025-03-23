@@ -112,4 +112,3 @@ This is a web-based chat application inspired by ChatGPT and Grok, featuring a u
 For additional support, refer to:
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs/)
-```
