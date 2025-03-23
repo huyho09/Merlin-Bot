@@ -1,44 +1,83 @@
+import os
+import uuid
+import json
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import uuid
-import os
 import io
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+from pathlib import Path
 
 load_dotenv()
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 CORS(app)  # Allow all origins
 
-# In-memory (RAM) storage for chats need. TODO: create a DB to save
-chats = {}
+CHATS_DIR = Path('chats')
+CHATS_DIR.mkdir(exist_ok=True)
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+def get_chat_data(chat_id):
+    chat_file = CHATS_DIR / f'{chat_id}.json'
+    if not chat_file.exists():
+        return None
+    with open(chat_file, 'r') as f:
+        return json.load(f)
+
+def save_chat_data(chat_id, data):
+    chat_file = CHATS_DIR / f'{chat_id}.json'
+    with open(chat_file, 'w') as f:
+        json.dump(data, f)
+
 @app.route('/api/chats', methods=['POST'])
 def create_chat():
-    chat_id = str(len(chats) + 1)
-    chats[chat_id] = {'messages': [], 'pdf_text': '', 'uploaded_pdfs': []}
+    chat_id = str(uuid.uuid4())
+    chat_data = {
+        'messages': [],
+        'pdf_text': '',
+        'uploaded_pdfs': [],
+        'name': f'Chat {chat_id[:4]}'  # Default name using first 4 chars of UUID
+    }
+    save_chat_data(chat_id, chat_data)
     return jsonify({"id": chat_id}), 201
 
 @app.route('/api/chats', methods=['GET'])
 def get_chats():
-    return jsonify([{"id": chat_id} for chat_id in chats.keys()])
+    chat_ids = [f.stem for f in CHATS_DIR.glob('*.json')]
+    return jsonify([{"id": chat_id} for chat_id in chat_ids])
 
-@app.route('/api/chats/<chat_id>', methods=['GET'])
-def get_chat(chat_id):
-    if chat_id not in chats:
-        return jsonify({"error": "Chat not found"}), 404
-    return jsonify({
-        "messages": chats[chat_id]['messages'],
-        "uploaded_pdfs": chats[chat_id].get('uploaded_pdfs', [])
-    })
+@app.route('/api/chats/<chat_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_chat(chat_id):
+    if request.method == 'GET':
+        chat_data = get_chat_data(chat_id)
+        if not chat_data:
+            return jsonify({"error": "Chat not found"}), 404
+        return jsonify(chat_data)
+    elif request.method == 'PUT':
+        chat_data = get_chat_data(chat_id)
+        if not chat_data:
+            return jsonify({"error": "Chat not found"}), 404
+        data = request.get_json()
+        new_name = data.get('name')
+        if not new_name:
+            return jsonify({"error": "Name is required"}), 400
+        chat_data['name'] = new_name
+        save_chat_data(chat_id, chat_data)
+        return jsonify({"success": True})
+    elif request.method == 'DELETE':
+        chat_file = CHATS_DIR / f'{chat_id}.json'
+        if not chat_file.exists():
+            return jsonify({"error": "Chat not found"}), 404
+        chat_file.unlink()
+        return jsonify({"success": True})
 
 @app.route('/api/chats/<chat_id>/upload-pdfs', methods=['POST'])
 def upload_pdfs(chat_id):
-    if chat_id not in chats:
+    chat_data = get_chat_data(chat_id)
+    if not chat_data:
         return jsonify({"error": "Chat not found"}), 404
     
     if 'pdfs' not in request.files:
@@ -56,23 +95,24 @@ def upload_pdfs(chat_id):
                 pdf_text += page.extract_text() or ""
             uploaded_pdfs.append(pdf_file.filename)
         except Exception as e:
-            return jsonify({"error": f"Error reading PDF: {str(e)}"}), 500
+            return jsonify({"error": f"Error reading PDF {pdf_file.filename}: {str(e)}"}), 500
     
-    # Overwrite existing pdf_text and uploaded_pdfs
-    chats[chat_id]['pdf_text'] = pdf_text
-    chats[chat_id]['uploaded_pdfs'] = uploaded_pdfs
-    
+    chat_data['pdf_text'] = pdf_text
+    chat_data['uploaded_pdfs'] = uploaded_pdfs
+    save_chat_data(chat_id, chat_data)
     return jsonify({"uploaded_pdfs": uploaded_pdfs})
 
 @app.route('/api/chats/<chat_id>/get-pdfs', methods=['GET'])
 def get_pdfs(chat_id):
-    if chat_id not in chats:
+    chat_data = get_chat_data(chat_id)
+    if not chat_data:
         return jsonify({"error": "Chat not found"}), 404
-    return jsonify({"pdf_text": chats[chat_id].get('pdf_text', '')})
+    return jsonify({"pdf_text": chat_data.get('pdf_text', '')})
 
 @app.route('/api/chats/<chat_id>/messages', methods=['POST'])
 def send_message(chat_id):
-    if chat_id not in chats:
+    chat_data = get_chat_data(chat_id)
+    if not chat_data:
         return jsonify({"error": "Chat not found"}), 404
     
     message = request.form.get("message")
@@ -84,18 +124,19 @@ def send_message(chat_id):
     openai_messages = []
     if pdf_text:
         openai_messages.append({"role": "system", "content": f"You have access to the following documents: {pdf_text}"})
-    openai_messages.extend(chats[chat_id]['messages'])
+    openai_messages.extend(chat_data['messages'])
     openai_messages.append({"role": "user", "content": message})
     
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=openai_messages,
-            max_tokens=4096  # Maximum standard output limit
+            max_tokens=4096
         )
         ai_response = response.choices[0].message.content
-        chats[chat_id]['messages'].append({"role": "user", "content": message})
-        chats[chat_id]['messages'].append({"role": "assistant", "content": ai_response})
+        chat_data['messages'].append({"role": "user", "content": message})
+        chat_data['messages'].append({"role": "assistant", "content": ai_response})
+        save_chat_data(chat_id, chat_data)
         return jsonify({"response": ai_response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
