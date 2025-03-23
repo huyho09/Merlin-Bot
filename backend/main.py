@@ -109,6 +109,29 @@ def get_pdfs(chat_id):
         return jsonify({"error": "Chat not found"}), 404
     return jsonify({"pdf_text": chat_data.get('pdf_text', '')})
 
+@app.route('/api/chats/<chat_id>/remove-pdf', methods=['POST'])
+def remove_pdf(chat_id):
+    chat_data = get_chat_data(chat_id)
+    if not chat_data:
+        return jsonify({"error": "Chat not found"}), 404
+    
+    data = request.get_json()
+    pdf_name = data.get('pdf_name')
+    if not pdf_name:
+        return jsonify({"error": "PDF name is required"}), 400
+    
+    if pdf_name not in chat_data['uploaded_pdfs']:
+        return jsonify({"error": "PDF not found in chat"}), 404
+    
+    chat_data['uploaded_pdfs'].remove(pdf_name)
+    # Update pdf_text by re-extracting from remaining PDFs (simplified here)
+    # In a real scenario, you'd need to store PDFs or re-upload to update text accurately
+    # For simplicity, we'll just clear pdf_text if no PDFs remain, or keep it (less accurate)
+    if not chat_data['uploaded_pdfs']:
+        chat_data['pdf_text'] = ''
+    save_chat_data(chat_id, chat_data)
+    return jsonify({"success": True})
+
 @app.route('/api/chats/<chat_id>/messages', methods=['POST'])
 def send_message(chat_id):
     chat_data = get_chat_data(chat_id)
@@ -136,6 +159,9 @@ def send_message(chat_id):
         ai_response = response.choices[0].message.content
         chat_data['messages'].append({"role": "user", "content": message})
         chat_data['messages'].append({"role": "assistant", "content": ai_response})
+        # Clear PDFs after sending message
+        chat_data['uploaded_pdfs'] = []
+        chat_data['pdf_text'] = ''
         save_chat_data(chat_id, chat_data)
         return jsonify({"response": ai_response})
     except Exception as e:

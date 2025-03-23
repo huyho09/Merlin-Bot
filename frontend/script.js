@@ -1,18 +1,18 @@
-//Use for PROD 
-const API_BASE = 'https://chatbot-clone-1.onrender.com'; 
+// Use for PROD
+//const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test
-// Default port is usually port 5000
-//const API_BASE = 'http://localhost:3000'; 
+// Normally using default port 5000. Please check the local API in log carefully
+const API_BASE = 'http://localhost:3000';
 
 class ChatApp {
     constructor() {
         this.chats = new Map();
         this.currentChatId = null;
-        this.isFirstLoad = !sessionStorage.getItem('hasLoaded'); // Check if it's the first load
+        this.isFirstLoad = !sessionStorage.getItem('hasLoaded');
         this.initializeElements();
         this.bindEvents();
-        this.initializeFirstChat(); // Handle first chat creation
+        this.initializeFirstChat();
     }
 
     initializeElements() {
@@ -58,14 +58,21 @@ class ChatApp {
                 }
             }
         });
+        // Event delegation for remove buttons
+        this.uploadedPdfsDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-pdf')) {
+                const pdfName = e.target.getAttribute('data-pdf');
+                this.removePdf(pdfName);
+            }
+        });
     }
 
     async initializeFirstChat() {
         if (this.isFirstLoad) {
-            await this.createNewChat(); // Create a new chat on first load
-            sessionStorage.setItem('hasLoaded', 'true'); // Mark as loaded
+            await this.createNewChat();
+            sessionStorage.setItem('hasLoaded', 'true');
         } else {
-            await this.loadChats(); // Load existing chats for subsequent loads
+            await this.loadChats();
         }
     }
 
@@ -118,7 +125,7 @@ class ChatApp {
             const chatData = await chatResponse.json();
             this.chats.set(chatId, chatData);
             this.currentChatId = chatId;
-            if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = ''; // Reset the UI display
+            if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
             this.renderChatHistory();
             this.renderMessages();
             this.renderUploadedPdfs();
@@ -166,7 +173,40 @@ class ChatApp {
             this.chats.get(this.currentChatId).messages.push({ role: 'assistant', content: `Error uploading PDFs: ${error.message}` });
             this.renderMessages();
         }
-        this.pdfInput.value = ''; // Reset file input
+        this.pdfInput.value = '';
+    }
+
+    async removePdf(pdfName) {
+        if (!this.currentChatId) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/remove-pdf`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pdf_name: pdfName })
+            });
+            console.log('Remove PDF response status:', response.status);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
+            }
+            const currentChat = this.chats.get(this.currentChatId);
+            if (currentChat) {
+                currentChat.uploaded_pdfs = currentChat.uploaded_pdfs.filter(name => name !== pdfName);
+                // Fetch updated pdf_text from backend
+                const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`);
+                if (!pdfResponse.ok) {
+                    throw new Error(`Failed to fetch updated PDFs: ${pdfResponse.status}`);
+                }
+                const pdfData = await pdfResponse.json();
+                currentChat.pdf_text = pdfData.pdf_text;
+            }
+            this.renderUploadedPdfs();
+        } catch (error) {
+            console.error('Error removing PDF:', error);
+            this.chats.get(this.currentChatId).messages.push({ role: 'assistant', content: `Error removing PDF: ${error.message}` });
+            this.renderMessages();
+        }
     }
 
     async sendMessage() {
@@ -219,10 +259,10 @@ class ChatApp {
             } else {
                 const aiResponse = { role: 'assistant', content: data.response };
                 chat.messages.push(aiResponse);
-                if (this.uploadedPdfsDiv) {
-                    this.uploadedPdfsDiv.remove();
-                    this.uploadedPdfsDiv = null;
-                }
+                // Clear uploaded PDFs after sending message
+                chat.uploaded_pdfs = [];
+                chat.pdf_text = '';
+                if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
             }
             this.renderMessages();
         } catch (error) {
@@ -316,11 +356,19 @@ class ChatApp {
         if (!this.uploadedPdfsDiv) return;
         this.uploadedPdfsDiv.innerHTML = '';
         const currentChat = this.chats.get(this.currentChatId);
-        if (currentChat && currentChat.uploaded_pdfs) {
+        if (currentChat && currentChat.uploaded_pdfs && currentChat.uploaded_pdfs.length > 0) {
             currentChat.uploaded_pdfs.forEach(pdf => {
+                const div = document.createElement('div');
+                div.className = 'pdf-item';
                 const p = document.createElement('p');
                 p.textContent = pdf;
-                this.uploadedPdfsDiv.appendChild(p);
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-pdf';
+                removeBtn.textContent = '×';
+                removeBtn.setAttribute('data-pdf', pdf);
+                div.appendChild(p);
+                div.appendChild(removeBtn);
+                this.uploadedPdfsDiv.appendChild(div);
             });
         }
     }
