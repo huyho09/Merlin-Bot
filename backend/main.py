@@ -154,7 +154,7 @@ def send_message(chat_id):
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=openai_messages,
-            max_tokens=4096
+            max_tokens=16384 
         )
         ai_response = response.choices[0].message.content
         chat_data['messages'].append({"role": "user", "content": message})
