@@ -102,7 +102,7 @@ This is a web-based chat application inspired by ChatGPT and Grok, featuring a u
 - [ ] **UI Enhancements**: Implement message editing, deletion, or a loading indicator for AI responses.
 - [ ] **Better Error Handling**: Display user-friendly error messages on the front end for network or API issues.
 - [ ] **Model Options**: Allow users to select different OpenAI models (e.g., `gpt-4`) or adjust parameters like temperature.
-- [ ] **Rate Limiting**: Add rate limiting on the backend to prevent API abuse.
+- [ x ] **Rate Limiting**: Add rate limiting on the backend to prevent API abuse.
 - [ ] **Token Management**: Handle long conversations by truncating or summarizing older messages to stay within OpenAI’s token limits.
 
 ## Notes
