@@ -1,9 +1,9 @@
 // Use for PROD
-//const API_BASE = 'https://chatbot-clone-1.onrender.com';
+const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test
 // Normally using default port 5000. Please check the local API in log carefully
-const API_BASE = 'http://localhost:3000';
+//const API_BASE = 'http://localhost:3000';
 
 class ChatApp {
     constructor() {
