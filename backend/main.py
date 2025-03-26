@@ -152,7 +152,7 @@ def send_message(chat_id):
     
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=openai_messages,
             max_tokens=16384 
         )
