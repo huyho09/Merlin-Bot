@@ -7,10 +7,26 @@
     <link rel="icon" type="image/svg+xml" href="/frontend/assest/icon.svg">
     <link rel="icon" type="image/x-icon" href="/frontend/assest/icon.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container-fluid p-0">
+    <div id="loginForm" class="container mt-5">
+        <h2>Login</h2>
+        <form id="loginFormElement">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+
+    <div id="chatApp" class="container-fluid p-0" style="display: none;">
         <div class="row g-0">
             <!-- Sidebar -->
             <div class="col-12 col-md-3 col-lg-2 sidebar d-md-block" id="sidebar">
@@ -30,7 +46,7 @@
                     <input type="file" id="pdfInput" multiple accept=".pdf" style="display: none;">
                     <button id="uploadPdfBtn" class="btn btn-secondary">Upload PDFs</button>
                 </div>
-                <div id="uploadedPdfs" class="mt-2 mb-3"></div> <!-- Moved here -->
+                <div id="uploadedPdfs" class="mt-2 mb-3"></div>
                 <div class="input-area">
                     <div class="input-group">
                         <textarea id="userInput" class="form-control" rows="1" placeholder="Type your message..."></textarea>
@@ -44,7 +60,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
-    <!-- Cloudflare script (kept for deployment, works locally with mock main.js) -->
+    <!-- Cloudflare script -->
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924124927c37135b',t:'MTc0MjU5ODgzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

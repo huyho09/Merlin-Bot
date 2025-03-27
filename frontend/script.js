@@ -2,8 +2,7 @@
 const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test
-// Normally using default port 5000. Please check the local API in log carefully
-//const API_BASE = 'http://localhost:3000';
+//const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {
@@ -12,7 +11,7 @@ class ChatApp {
         this.isFirstLoad = !sessionStorage.getItem('hasLoaded');
         this.initializeElements();
         this.bindEvents();
-        this.initializeFirstChat();
+        this.checkLoginStatus();
     }
 
     initializeElements() {
@@ -27,6 +26,9 @@ class ChatApp {
         this.uploadPdfBtn = document.getElementById('uploadPdfBtn');
         this.pdfInput = document.getElementById('pdfInput');
         this.uploadedPdfsDiv = document.getElementById('uploadedPdfs');
+        this.loginForm = document.getElementById('loginFormElement');
+        this.chatAppDiv = document.getElementById('chatApp');
+        this.loginDiv = document.getElementById('loginForm');
     }
 
     bindEvents() {
@@ -58,41 +60,104 @@ class ChatApp {
                 }
             }
         });
-        // Event delegation for remove buttons
         this.uploadedPdfsDiv.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-pdf')) {
                 const pdfName = e.target.getAttribute('data-pdf');
                 this.removePdf(pdfName);
             }
         });
+        this.loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleLogin();
+        });
     }
 
-    async initializeFirstChat() {
-        if (this.isFirstLoad) {
-            await this.createNewChat();
-            sessionStorage.setItem('hasLoaded', 'true');
-        } else {
-            await this.loadChats();
+    async checkLoginStatus() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            this.loginDiv.style.display = 'block';
+            this.chatAppDiv.style.display = 'none';
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE}/api/check-login`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            const data = await response.json();
+            console.log('Check login response:', data);
+            if (data.logged_in) {
+                this.loginDiv.style.display = 'none';
+                this.chatAppDiv.style.display = 'block';
+                if (this.isFirstLoad) {
+                    await this.createNewChat();
+                    sessionStorage.setItem('hasLoaded', 'true');
+                } else {
+                    await this.loadChats();
+                }
+            } else {
+                localStorage.removeItem('token');
+                this.loginDiv.style.display = 'block';
+                this.chatAppDiv.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error);
+            localStorage.removeItem('token');
+            this.loginDiv.style.display = 'block';
+            this.chatAppDiv.style.display = 'none';
+        }
+    }
+
+    async handleLogin() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        try {
+            const response = await fetch(`${API_BASE}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            console.log('Login response:', data);
+            if (response.ok) {
+                localStorage.setItem('token', data.token);
+                this.loginDiv.style.display = 'none';
+                this.chatAppDiv.style.display = 'block';
+                if (this.isFirstLoad) {
+                    await this.createNewChat();
+                    sessionStorage.setItem('hasLoaded', 'true');
+                } else {
+                    await this.loadChats();
+                }
+            } else {
+                alert(data.error || 'Login failed');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Login error occurred');
         }
     }
 
     async loadChats() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            this.loginDiv.style.display = 'block';
+            this.chatAppDiv.style.display = 'none';
+            return;
+        }
         try {
-            const response = await fetch(`${API_BASE}/api/chats`);
-            console.log('Load chats response status:', response.status);
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
-            }
+            const response = await fetch(`${API_BASE}/api/chats`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const chatsData = await response.json();
             const chatIds = chatsData.map(chat => chat.id);
             const histories = await Promise.all(
-                chatIds.map(id => fetch(`${API_BASE}/api/chats/${id}`).then(res => {
-                    if (!res.ok) {
-                        throw new Error(`Failed to fetch chat ${id}: ${res.status}`);
-                    }
-                    return res.json();
-                }))
+                chatIds.map(id => fetch(`${API_BASE}/api/chats/${id}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': token }
+                }).then(res => res.json()))
             );
             for (let i = 0; i < chatIds.length; i++) {
                 this.chats.set(chatIds[i], histories[i]);
@@ -109,19 +174,26 @@ class ChatApp {
     }
 
     async createNewChat() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in to create a new chat.');
+            this.loginDiv.style.display = 'block';
+            this.chatAppDiv.style.display = 'none';
+            return;
+        }
         try {
-            const response = await fetch(`${API_BASE}/api/chats`, { method: 'POST' });
-            console.log('Create chat response status:', response.status);
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
-            }
+            const response = await fetch(`${API_BASE}/api/chats`, {
+                method: 'POST',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
             const chatId = data.id;
-            const chatResponse = await fetch(`${API_BASE}/api/chats/${chatId}`);
-            if (!chatResponse.ok) {
-                throw new Error(`Failed to fetch new chat ${chatId}: ${chatResponse.status}`);
-            }
+            const chatResponse = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!chatResponse.ok) throw new Error(`Failed to fetch new chat ${chatId}: ${chatResponse.status}`);
             const chatData = await chatResponse.json();
             this.chats.set(chatId, chatData);
             this.currentChatId = chatId;
@@ -132,6 +204,7 @@ class ChatApp {
             this.userInput.focus();
         } catch (error) {
             console.error('Error creating new chat:', error);
+            alert('Failed to create chat: ' + error.message);
         }
     }
 
@@ -139,10 +212,10 @@ class ChatApp {
         const files = this.pdfInput.files;
         if (files.length === 0 || !this.currentChatId) return;
 
-        const maxSize = 10 * 1024 * 1024; // 10 MB
+        const maxSize = 10 * 1024 * 1024;
         for (let i = 0; i < files.length; i++) {
             if (files[i].size > maxSize) {
-                alert(`File ${files[i].name} exceeds 10 MB limit. Please upload smaller files.`);
+                alert(`File ${files[i].name} exceeds 10 MB limit.`);
                 return;
             }
         }
@@ -152,16 +225,14 @@ class ChatApp {
             formData.append('pdfs', files[i]);
         }
 
+        const token = localStorage.getItem('token');
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/upload-pdfs`, {
                 method: 'POST',
+                headers: { 'Authorization': token },
                 body: formData
             });
-            console.log('Upload PDFs response status:', response.status);
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
             const currentChat = this.chats.get(this.currentChatId);
             if (currentChat) {
@@ -179,25 +250,24 @@ class ChatApp {
     async removePdf(pdfName) {
         if (!this.currentChatId) return;
 
+        const token = localStorage.getItem('token');
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/remove-pdf`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ pdf_name: pdfName })
             });
-            console.log('Remove PDF response status:', response.status);
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const currentChat = this.chats.get(this.currentChatId);
             if (currentChat) {
                 currentChat.uploaded_pdfs = currentChat.uploaded_pdfs.filter(name => name !== pdfName);
-                // Fetch updated pdf_text from backend
-                const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`);
-                if (!pdfResponse.ok) {
-                    throw new Error(`Failed to fetch updated PDFs: ${pdfResponse.status}`);
-                }
+                const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`, {
+                    method: 'GET',
+                    headers: { 'Authorization': token }
+                });
                 const pdfData = await pdfResponse.json();
                 currentChat.pdf_text = pdfData.pdf_text;
             }
@@ -211,7 +281,7 @@ class ChatApp {
 
     async sendMessage() {
         if (!this.currentChatId) {
-            alert('No chat available. Please create a new chat first by clicking "New Chat" in the sidebar.');
+            alert('No chat available. Please create a new chat.');
             return;
         }
 
@@ -230,36 +300,34 @@ class ChatApp {
         const formData = new FormData();
         formData.append('message', userInput);
         const currentChat = this.chats.get(this.currentChatId);
-        if (currentChat && currentChat.uploaded_pdfs && currentChat.uploaded_pdfs.length > 0) {
-            const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`);
-            if (!pdfResponse.ok) {
-                throw new Error(`Failed to fetch PDFs: ${pdfResponse.status}`);
-            }
+        if (currentChat.uploaded_pdfs.length > 0) {
+            const token = localStorage.getItem('token');
+            const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
             const pdfData = await pdfResponse.json();
             formData.append('pdf_text', pdfData.pdf_text);
         }
 
+        const token = localStorage.getItem('token');
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/messages`, {
                 method: 'POST',
+                headers: { 'Authorization': token },
                 body: formData
             });
-            console.log('Send message response status:', response.status);
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}, Body: ${text}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
             const chat = this.chats.get(this.currentChatId);
             const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
             if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
 
             if (data.error) {
-                chat.messages.push({ role: 'assistant', content: `Sorry, an error occurred: ${data.error}` });
+                chat.messages.push({ role: 'assistant', content: `Error: ${data.error}` });
             } else {
                 const aiResponse = { role: 'assistant', content: data.response };
                 chat.messages.push(aiResponse);
-                // Clear uploaded PDFs after sending message
                 chat.uploaded_pdfs = [];
                 chat.pdf_text = '';
                 if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
@@ -270,7 +338,7 @@ class ChatApp {
             const chat = this.chats.get(this.currentChatId);
             const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
             if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
-            chat.messages.push({ role: 'assistant', content: `Sorry, an error occurred: ${error.message}` });
+            chat.messages.push({ role: 'assistant', content: `Error: ${error.message}` });
             this.renderMessages();
         }
     }
@@ -331,7 +399,6 @@ class ChatApp {
             dropdownDiv.appendChild(dropdownMenu);
             
             item.appendChild(dropdownDiv);
-            
             this.chatHistory.appendChild(item);
         });
     }
@@ -343,7 +410,7 @@ class ChatApp {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
             if (msg.role === 'assistant' && !msg.isThinking) {
-                div.innerHTML = marked.parse(msg.content);
+                div.innerHTML = marked.parse(msg.content); // Assumes marked.js is included for markdown parsing
             } else {
                 div.innerHTML = msg.content;
             }
@@ -379,21 +446,22 @@ class ChatApp {
         const currentName = chat.name || `Chat ${chatId.slice(-4)}`;
         const newName = prompt('Enter new name for the chat:', currentName);
         if (newName) {
+            const token = localStorage.getItem('token');
             try {
                 const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ name: newName })
                 });
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Failed to rename chat');
-                }
+                if (!response.ok) throw new Error('Failed to rename chat');
                 chat.name = newName;
                 this.renderChatHistory();
             } catch (error) {
                 console.error('Error renaming chat:', error);
-                alert('Failed to rename chat: ' + error.message);
+                alert('Failed to rename chat');
             }
         }
     }
@@ -402,26 +470,23 @@ class ChatApp {
         const chat = this.chats.get(chatId);
         if (!chat) return;
         if (confirm(`Are you sure you want to delete chat ${chat.name || 'Chat ' + chatId.slice(-4)}?`)) {
+            const token = localStorage.getItem('token');
             try {
                 const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Authorization': token }
                 });
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Failed to delete chat');
-                }
+                if (!response.ok) throw new Error('Failed to delete chat');
                 this.chats.delete(chatId);
                 if (this.currentChatId === chatId) {
-                    this.currentChatId = null;
-                    if (this.chats.size > 0) {
-                        this.currentChatId = Array.from(this.chats.keys())[0];
-                    }
+                    this.currentChatId = this.chats.size > 0 ? Array.from(this.chats.keys())[0] : null;
                 }
                 this.renderChatHistory();
                 this.renderMessages();
+                this.renderUploadedPdfs();
             } catch (error) {
                 console.error('Error deleting chat:', error);
-                alert('Failed to delete chat: ' + error.message);
+                alert('Failed to delete chat');
             }
         }
     }
