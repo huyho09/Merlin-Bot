@@ -1,12 +1,11 @@
 // Use for PROD
-const API_BASE = 'https://chatbot-clone-1.onrender.com';
+//const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test
-//const API_BASE = 'http://localhost:5001';
+const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {
-        this.chats = new Map();
         this.currentChatId = null;
         this.isFirstLoad = !sessionStorage.getItem('hasLoaded');
         this.initializeElements();
@@ -15,6 +14,7 @@ class ChatApp {
     }
 
     initializeElements() {
+        this.loadingDiv = document.getElementById('loading');
         this.chatMessages = document.getElementById('chatMessages');
         this.userInput = document.getElementById('userInput');
         this.sendMessageBtn = document.getElementById('sendMessage');
@@ -29,6 +29,7 @@ class ChatApp {
         this.loginForm = document.getElementById('loginFormElement');
         this.chatAppDiv = document.getElementById('chatApp');
         this.loginDiv = document.getElementById('loginForm');
+        this.logoutBtn = document.getElementById('logoutBtn');
     }
 
     bindEvents() {
@@ -70,11 +71,13 @@ class ChatApp {
             e.preventDefault();
             this.handleLogin();
         });
+        this.logoutBtn.addEventListener('click', () => this.handleLogout());
     }
 
     async checkLoginStatus() {
         const token = localStorage.getItem('token');
         if (!token) {
+            this.loadingDiv.style.display = 'none';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -85,8 +88,8 @@ class ChatApp {
                 headers: { 'Authorization': token }
             });
             const data = await response.json();
-            console.log('Check login response:', data);
             if (data.logged_in) {
+                this.loadingDiv.style.display = 'none';
                 this.loginDiv.style.display = 'none';
                 this.chatAppDiv.style.display = 'block';
                 if (this.isFirstLoad) {
@@ -97,12 +100,14 @@ class ChatApp {
                 }
             } else {
                 localStorage.removeItem('token');
+                this.loadingDiv.style.display = 'none';
                 this.loginDiv.style.display = 'block';
                 this.chatAppDiv.style.display = 'none';
             }
         } catch (error) {
             console.error('Error checking login status:', error);
             localStorage.removeItem('token');
+            this.loadingDiv.style.display = 'none';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
         }
@@ -118,7 +123,6 @@ class ChatApp {
                 body: JSON.stringify({ username, password })
             });
             const data = await response.json();
-            console.log('Login response:', data);
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 this.loginDiv.style.display = 'none';
@@ -152,19 +156,9 @@ class ChatApp {
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const chatsData = await response.json();
-            const chatIds = chatsData.map(chat => chat.id);
-            const histories = await Promise.all(
-                chatIds.map(id => fetch(`${API_BASE}/api/chats/${id}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': token }
-                }).then(res => res.json()))
-            );
-            for (let i = 0; i < chatIds.length; i++) {
-                this.chats.set(chatIds[i], histories[i]);
-            }
-            if (this.chats.size > 0) {
-                this.currentChatId = chatIds[0];
-                this.renderChatHistory();
+            if (chatsData.length > 0) {
+                this.currentChatId = chatsData[0].id; // Set the first chat as active
+                this.renderChatHistory(chatsData);
                 this.renderMessages();
                 this.renderUploadedPdfs();
             }
@@ -188,15 +182,7 @@ class ChatApp {
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
-            const chatId = data.id;
-            const chatResponse = await fetch(`${API_BASE}/api/chats/${chatId}`, {
-                method: 'GET',
-                headers: { 'Authorization': token }
-            });
-            if (!chatResponse.ok) throw new Error(`Failed to fetch new chat ${chatId}: ${chatResponse.status}`);
-            const chatData = await chatResponse.json();
-            this.chats.set(chatId, chatData);
-            this.currentChatId = chatId;
+            this.currentChatId = data.id;
             if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
             this.renderChatHistory();
             this.renderMessages();
@@ -233,16 +219,11 @@ class ChatApp {
                 body: formData
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            const data = await response.json();
-            const currentChat = this.chats.get(this.currentChatId);
-            if (currentChat) {
-                currentChat.uploaded_pdfs = data.uploaded_pdfs;
-            }
+            await response.json();
             this.renderUploadedPdfs();
         } catch (error) {
             console.error('Error uploading PDFs:', error);
-            this.chats.get(this.currentChatId).messages.push({ role: 'assistant', content: `Error uploading PDFs: ${error.message}` });
-            this.renderMessages();
+            this.renderMessagesWithError(`Error uploading PDFs: ${error.message}`);
         }
         this.pdfInput.value = '';
     }
@@ -261,21 +242,10 @@ class ChatApp {
                 body: JSON.stringify({ pdf_name: pdfName })
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            const currentChat = this.chats.get(this.currentChatId);
-            if (currentChat) {
-                currentChat.uploaded_pdfs = currentChat.uploaded_pdfs.filter(name => name !== pdfName);
-                const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`, {
-                    method: 'GET',
-                    headers: { 'Authorization': token }
-                });
-                const pdfData = await pdfResponse.json();
-                currentChat.pdf_text = pdfData.pdf_text;
-            }
             this.renderUploadedPdfs();
         } catch (error) {
             console.error('Error removing PDF:', error);
-            this.chats.get(this.currentChatId).messages.push({ role: 'assistant', content: `Error removing PDF: ${error.message}` });
-            this.renderMessages();
+            this.renderMessagesWithError(`Error removing PDF: ${error.message}`);
         }
     }
 
@@ -288,30 +258,30 @@ class ChatApp {
         const userInput = this.userInput.value.trim();
         if (userInput === '') return;
 
-        const userMessage = { role: 'user', content: userInput };
-        this.chats.get(this.currentChatId).messages.push(userMessage);
-        this.renderMessages();
-        this.userInput.value = '';
-
-        const thinkingMessage = { role: 'assistant', content: '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>', isThinking: true };
-        this.chats.get(this.currentChatId).messages.push(thinkingMessage);
-        this.renderMessages();
-
-        const formData = new FormData();
-        formData.append('message', userInput);
-        const currentChat = this.chats.get(this.currentChatId);
-        if (currentChat.uploaded_pdfs.length > 0) {
-            const token = localStorage.getItem('token');
-            const pdfResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/get-pdfs`, {
+        const token = localStorage.getItem('token');
+        try {
+            // Fetch current chat data to append user message
+            const chatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
                 headers: { 'Authorization': token }
             });
-            const pdfData = await pdfResponse.json();
-            formData.append('pdf_text', pdfData.pdf_text);
-        }
+            if (!chatResponse.ok) throw new Error('Failed to fetch chat');
+            const chatData = await chatResponse.json();
+            const messages = chatData.messages;
 
-        const token = localStorage.getItem('token');
-        try {
+            messages.push({ role: 'user', content: userInput });
+            this.renderMessages(messages);
+            this.userInput.value = '';
+
+            messages.push({ role: 'assistant', content: '<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>', isThinking: true });
+            this.renderMessages(messages);
+
+            const formData = new FormData();
+            formData.append('message', userInput);
+            if (chatData.uploaded_pdfs.length > 0) {
+                formData.append('pdf_text', chatData.pdf_text);
+            }
+
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/messages`, {
                 method: 'POST',
                 headers: { 'Authorization': token },
@@ -319,41 +289,48 @@ class ChatApp {
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
-            const chat = this.chats.get(this.currentChatId);
-            const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
-            if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
 
-            if (data.error) {
-                chat.messages.push({ role: 'assistant', content: `Error: ${data.error}` });
-            } else {
-                const aiResponse = { role: 'assistant', content: data.response };
-                chat.messages.push(aiResponse);
-                chat.uploaded_pdfs = [];
-                chat.pdf_text = '';
-                if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
-            }
-            this.renderMessages();
+            // Fetch updated chat data after sending message
+            const updatedChatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            const updatedChat = await updatedChatResponse.json();
+            this.renderMessages(updatedChat.messages);
+            if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
+            this.renderUploadedPdfs();
         } catch (error) {
             console.error('Error sending message:', error);
-            const chat = this.chats.get(this.currentChatId);
-            const thinkingIndex = chat.messages.findIndex(msg => msg.isThinking);
-            if (thinkingIndex !== -1) chat.messages.splice(thinkingIndex, 1);
-            chat.messages.push({ role: 'assistant', content: `Error: ${error.message}` });
-            this.renderMessages();
+            this.renderMessagesWithError(`Error: ${error.message}`);
         }
     }
 
-    renderChatHistory() {
+    async renderChatHistory(chatsData = null) {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        let chats;
+        if (chatsData) {
+            chats = chatsData;
+        } else {
+            const response = await fetch(`${API_BASE}/api/chats`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) return;
+            chats = await response.json();
+        }
+
         this.chatHistory.innerHTML = '';
-        this.chats.forEach((chat, chatId) => {
+        chats.forEach(chat => {
             const item = document.createElement('div');
-            item.className = `list-group-item d-flex justify-content-between align-items-center ${chatId === this.currentChatId ? 'active-chat' : ''}`;
+            item.className = `list-group-item d-flex justify-content-between align-items-center ${chat.id === this.currentChatId ? 'active-chat' : ''}`;
             
             const chatNameSpan = document.createElement('span');
             chatNameSpan.className = 'chat-name flex-grow-1';
-            chatNameSpan.textContent = chat.name || `Chat ${chatId.slice(-4)}`;
+            chatNameSpan.textContent = chat.name || `Chat ${chat.id.slice(-4)}`;
             chatNameSpan.addEventListener('click', () => {
-                this.currentChatId = chatId;
+                this.currentChatId = chat.id;
                 this.renderChatHistory();
                 this.renderMessages();
                 this.renderUploadedPdfs();
@@ -379,7 +356,7 @@ class ChatApp {
             renameLink.className = 'dropdown-item';
             renameLink.href = '#';
             renameLink.setAttribute('data-action', 'rename');
-            renameLink.setAttribute('data-chat-id', chatId);
+            renameLink.setAttribute('data-chat-id', chat.id);
             renameLink.textContent = 'Rename';
             renameItem.appendChild(renameLink);
             
@@ -388,7 +365,7 @@ class ChatApp {
             deleteLink.className = 'dropdown-item';
             deleteLink.href = '#';
             deleteLink.setAttribute('data-action', 'delete');
-            deleteLink.setAttribute('data-chat-id', chatId);
+            deleteLink.setAttribute('data-chat-id', chat.id);
             deleteLink.textContent = 'Delete';
             deleteItem.appendChild(deleteLink);
             
@@ -403,14 +380,31 @@ class ChatApp {
         });
     }
 
-    renderMessages() {
+    async renderMessages(messages = null) {
+        if (!this.currentChatId) return;
+
+        const token = localStorage.getItem('token');
+        if (!messages) {
+            try {
+                const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': token }
+                });
+                if (!response.ok) throw new Error('Failed to fetch messages');
+                const chatData = await response.json();
+                messages = chatData.messages;
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+                return;
+            }
+        }
+
         this.chatMessages.innerHTML = '';
-        const messages = this.chats.get(this.currentChatId)?.messages || [];
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
             if (msg.role === 'assistant' && !msg.isThinking) {
-                div.innerHTML = marked.parse(msg.content); // Assumes marked.js is included for markdown parsing
+                div.innerHTML = marked.parse(msg.content);
             } else {
                 div.innerHTML = msg.content;
             }
@@ -419,36 +413,53 @@ class ChatApp {
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 
-    renderUploadedPdfs() {
-        if (!this.uploadedPdfsDiv) return;
-        this.uploadedPdfsDiv.innerHTML = '';
-        const currentChat = this.chats.get(this.currentChatId);
-        if (currentChat && currentChat.uploaded_pdfs && currentChat.uploaded_pdfs.length > 0) {
-            currentChat.uploaded_pdfs.forEach(pdf => {
-                const div = document.createElement('div');
-                div.className = 'pdf-item';
-                const p = document.createElement('p');
-                p.textContent = pdf;
-                const removeBtn = document.createElement('span');
-                removeBtn.className = 'remove-pdf';
-                removeBtn.textContent = '×';
-                removeBtn.setAttribute('data-pdf', pdf);
-                div.appendChild(p);
-                div.appendChild(removeBtn);
-                this.uploadedPdfsDiv.appendChild(div);
+    async renderUploadedPdfs() {
+        if (!this.currentChatId || !this.uploadedPdfsDiv) return;
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
             });
+            if (!response.ok) throw new Error('Failed to fetch chat');
+            const chatData = await response.json();
+            const uploadedPdfs = chatData.uploaded_pdfs;
+
+            this.uploadedPdfsDiv.innerHTML = '';
+            if (uploadedPdfs && uploadedPdfs.length > 0) {
+                uploadedPdfs.forEach(pdf => {
+                    const div = document.createElement('div');
+                    div.className = 'pdf-item';
+                    const p = document.createElement('p');
+                    p.textContent = pdf;
+                    const removeBtn = document.createElement('span');
+                    removeBtn.className = 'remove-pdf';
+                    removeBtn.textContent = '×';
+                    removeBtn.setAttribute('data-pdf', pdf);
+                    div.appendChild(p);
+                    div.appendChild(removeBtn);
+                    this.uploadedPdfsDiv.appendChild(div);
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching uploaded PDFs:', error);
         }
     }
 
     async renameChat(chatId) {
-        const chat = this.chats.get(chatId);
-        if (!chat) return;
-        const currentName = chat.name || `Chat ${chatId.slice(-4)}`;
-        const newName = prompt('Enter new name for the chat:', currentName);
-        if (newName) {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) throw new Error('Failed to fetch chat');
+            const chatData = await response.json();
+            const currentName = chatData.name || `Chat ${chatId.slice(-4)}`;
+            const newName = prompt('Enter new name for the chat:', currentName);
+            if (newName) {
+                const updateResponse = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': token,
@@ -456,38 +467,94 @@ class ChatApp {
                     },
                     body: JSON.stringify({ name: newName })
                 });
-                if (!response.ok) throw new Error('Failed to rename chat');
-                chat.name = newName;
+                if (!updateResponse.ok) throw new Error('Failed to rename chat');
                 this.renderChatHistory();
-            } catch (error) {
-                console.error('Error renaming chat:', error);
-                alert('Failed to rename chat');
             }
+        } catch (error) {
+            console.error('Error renaming chat:', error);
+            alert('Failed to rename chat');
         }
     }
 
     async deleteChat(chatId) {
-        const chat = this.chats.get(chatId);
-        if (!chat) return;
-        if (confirm(`Are you sure you want to delete chat ${chat.name || 'Chat ' + chatId.slice(-4)}?`)) {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) throw new Error('Failed to fetch chat');
+            const chatData = await response.json();
+            if (confirm(`Are you sure you want to delete chat ${chatData.name || 'Chat ' + chatId.slice(-4)}?`)) {
+                const deleteResponse = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': token }
                 });
-                if (!response.ok) throw new Error('Failed to delete chat');
-                this.chats.delete(chatId);
+                if (!deleteResponse.ok) throw new Error('Failed to delete chat');
                 if (this.currentChatId === chatId) {
-                    this.currentChatId = this.chats.size > 0 ? Array.from(this.chats.keys())[0] : null;
+                    const chatsResponse = await fetch(`${API_BASE}/api/chats`, {
+                        method: 'GET',
+                        headers: { 'Authorization': token }
+                    });
+                    const chats = await chatsResponse.json();
+                    this.currentChatId = chats.length > 0 ? chats[0].id : null;
                 }
                 this.renderChatHistory();
                 this.renderMessages();
                 this.renderUploadedPdfs();
-            } catch (error) {
-                console.error('Error deleting chat:', error);
-                alert('Failed to delete chat');
             }
+        } catch (error) {
+            console.error('Error deleting chat:', error);
+            alert('Failed to delete chat');
+        }
+    }
+
+    async handleLogout() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            this.loginDiv.style.display = 'block';
+            this.chatAppDiv.style.display = 'none';
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE}/api/logout`, {
+                method: 'POST',
+                headers: { 'Authorization': token }
+            });
+            if (response.ok) {
+                localStorage.removeItem('token');
+                this.currentChatId = null;
+                this.renderChatHistory();
+                this.renderMessages();
+                this.renderUploadedPdfs();
+                this.loginDiv.style.display = 'block';
+                this.chatAppDiv.style.display = 'none';
+            } else {
+                alert('Logout failed');
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('Logout error occurred');
+        }
+    }
+
+    // Helper method to display error messages
+    async renderMessagesWithError(errorMessage) {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
+                method: 'GET',
+                headers: { 'Authorization': token }
+            });
+            if (!response.ok) throw new Error('Failed to fetch chat');
+            const chatData = await response.json();
+            const messages = chatData.messages;
+            const thinkingIndex = messages.findIndex(msg => msg.isThinking);
+            if (thinkingIndex !== -1) messages.splice(thinkingIndex, 1);
+            messages.push({ role: 'assistant', content: errorMessage });
+            this.renderMessages(messages);
+        } catch (error) {
+            console.error('Error rendering error message:', error);
         }
     }
 }
