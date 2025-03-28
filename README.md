@@ -97,7 +97,7 @@ This is a web-based chat application inspired by ChatGPT and Grok, featuring a u
   - Confirm the key is set (`echo $OPENAI_API_KEY`) before running `main.py`.
 
 ## Future Improvements
-- [ ] **Persistent Storage**: Replace the in-memory `chats` dictionary with a database (e.g., SQLite or PostgreSQL) to save chat history across restarts.
+- [x] **Persistent Storage**: Replace the in-memory `chats` dictionary with a database (e.g., SQLite or PostgreSQL) to save chat history across restarts.
 - [ ] **User Authentication**: Add login functionality to support multiple users with private chat histories.
 - [ ] **UI Enhancements**: Implement message editing, deletion, or a loading indicator for AI responses.
 - [ ] **Better Error Handling**: Display user-friendly error messages on the front end for network or API issues.
