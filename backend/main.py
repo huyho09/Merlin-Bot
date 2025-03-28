@@ -112,7 +112,7 @@ def create_chat():
 @token_required
 def get_chats():
     chats = Chat.query.filter_by(user_id=request.user.id).all()
-    return jsonify([{"id": chat.id} for chat in chats])
+    return jsonify([{"id": chat.id, "name": chat.name} for chat in chats])
 
 @app.route('/api/chats/<chat_id>', methods=['GET', 'PUT', 'DELETE'])
 @token_required
