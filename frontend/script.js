@@ -226,7 +226,7 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats`, {
                 method: 'POST',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
