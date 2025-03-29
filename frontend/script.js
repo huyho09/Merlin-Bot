@@ -8,7 +8,7 @@ const API_BASE = 'https://chatbot-clone-1.onrender.com';
 class ChatApp {
     constructor() {
         this.currentChatId = null;
-        this.isFirstLoad = !sessionStorage.getItem('hasLoaded');
+        this.isFirstLoad = !sessionStorage.getItem('hasLoaded'); // Still track first load for session management
         this.initializeElements();
         this.bindEvents();
         this.checkLoginStatus();
@@ -30,7 +30,7 @@ class ChatApp {
         this.loginForm = document.getElementById('loginFormElement');
         this.chatAppDiv = document.getElementById('chatApp');
         this.loginDiv = document.getElementById('loginForm');
-        this.quoteDiv = document.getElementById('quote'); // Added quote div
+        this.quoteDiv = document.getElementById('quote');
         this.logoutBtn = document.getElementById('logoutBtn');
     }
 
@@ -80,7 +80,7 @@ class ChatApp {
         const token = localStorage.getItem('token');
         if (!token) {
             this.loadingDiv.style.display = 'none';
-            this.quoteDiv.style.display = 'block'; // Show quote with login
+            this.quoteDiv.style.display = 'block';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -93,19 +93,17 @@ class ChatApp {
             const data = await response.json();
             if (data.logged_in) {
                 this.loadingDiv.style.display = 'none';
-                this.quoteDiv.style.display = 'none'; // Hide quote when logged in
+                this.quoteDiv.style.display = 'none';
                 this.loginDiv.style.display = 'none';
                 this.chatAppDiv.style.display = 'block';
-                if (this.isFirstLoad) {
-                    await this.createNewChat();
-                    sessionStorage.setItem('hasLoaded', 'true');
-                } else {
-                    await this.loadChats();
-                }
+                // Load existing chats instead of creating a new one
+                await this.loadChats();
+                // Mark the session as loaded, but don't auto-create a chat
+                sessionStorage.setItem('hasLoaded', 'true');
             } else {
                 localStorage.removeItem('token');
                 this.loadingDiv.style.display = 'none';
-                this.quoteDiv.style.display = 'block'; // Show quote when not logged in
+                this.quoteDiv.style.display = 'block';
                 this.loginDiv.style.display = 'block';
                 this.chatAppDiv.style.display = 'none';
             }
@@ -113,7 +111,7 @@ class ChatApp {
             console.error('Error checking login status:', error);
             localStorage.removeItem('token');
             this.loadingDiv.style.display = 'none';
-            this.quoteDiv.style.display = 'block'; // Show quote on error
+            this.quoteDiv.style.display = 'block';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
         }
@@ -131,15 +129,13 @@ class ChatApp {
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem('token', data.token);
-                this.quoteDiv.style.display = 'none'; // Hide quote on successful login
+                this.quoteDiv.style.display = 'none';
                 this.loginDiv.style.display = 'none';
                 this.chatAppDiv.style.display = 'block';
-                if (this.isFirstLoad) {
-                    await this.createNewChat();
-                    sessionStorage.setItem('hasLoaded', 'true');
-                } else {
-                    await this.loadChats();
-                }
+                // Load existing chats instead of creating a new one
+                await this.loadChats();
+                // Mark the session as loaded
+                sessionStorage.setItem('hasLoaded', 'true');
             } else {
                 alert(data.error || 'Login failed');
             }
@@ -152,7 +148,7 @@ class ChatApp {
     async loadChats() {
         const token = localStorage.getItem('token');
         if (!token) {
-            this.quoteDiv.style.display = 'block'; // Show quote if token missing
+            this.quoteDiv.style.display = 'block';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -164,14 +160,21 @@ class ChatApp {
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const chatsData = await response.json();
+            this.renderChatHistory(chatsData);
+            // Only set currentChatId and render messages if there are existing chats
             if (chatsData.length > 0) {
-                this.currentChatId = chatsData[0].id; // Set the first chat as active
-                this.renderChatHistory(chatsData);
+                this.currentChatId = chatsData[0].id;
                 this.renderMessages();
                 this.renderUploadedPdfs();
+            } else {
+                // Clear chat area if no chats exist
+                this.currentChatId = null;
+                this.chatMessages.innerHTML = '';
+                if (this.uploadedPdfsDiv) this.uploadedPdfsDiv.innerHTML = '';
             }
         } catch (error) {
             console.error('Error loading chats:', error);
+            this.chatMessages.innerHTML = '<p>Error loading chats. Please try again.</p>';
         }
     }
 
@@ -179,7 +182,7 @@ class ChatApp {
         const token = localStorage.getItem('token');
         if (!token) {
             alert('Please log in to create a new chat.');
-            this.quoteDiv.style.display = 'block'; // Show quote if not logged in
+            this.quoteDiv.style.display = 'block';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -269,7 +272,6 @@ class ChatApp {
 
         const token = localStorage.getItem('token');
         try {
-            // Fetch current chat data to append user message
             const chatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
                 headers: { 'Authorization': token }
@@ -299,7 +301,6 @@ class ChatApp {
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
 
-            // Fetch updated chat data after sending message
             const updatedChatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
                 headers: { 'Authorization': token }
@@ -418,12 +419,14 @@ class ChatApp {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
 
-                // Process code blocks for Prism.js
                 const codeBlocks = tempDiv.querySelectorAll('pre code');
                 codeBlocks.forEach((code, index) => {
                     const pre = code.parentElement;
-                    const language = code.className ? code.className.replace('language-', '') : 'plaintext';
-                    code.className = `language-${language}`; // Ensure Prism.js recognizes the language
+                    let language = code.className ? code.className.replace('language-', '') : 'plaintext';
+                    if (language === 'vue') {
+                        language = 'markup';
+                    }
+                    code.className = `language-${language}`;
                     const snippetDiv = document.createElement('div');
                     snippetDiv.className = 'code-snippet';
                     snippetDiv.innerHTML = `<pre><code class="language-${language}">${code.textContent}</code></pre>`;
@@ -438,7 +441,7 @@ class ChatApp {
                 });
 
                 div.appendChild(tempDiv);
-                Prism.highlightAllUnder(div); // Apply Prism.js highlighting
+                Prism.highlightAllUnder(div);
             } else {
                 div.innerHTML = msg.content;
             }
@@ -454,7 +457,7 @@ class ChatApp {
             setTimeout(() => {
                 button.classList.remove('copied');
                 button.innerHTML = '<i class="fas fa-copy"></i>';
-            }, 2000); // Reset after 2 seconds
+            }, 2000);
         }).catch(err => {
             console.error('Failed to copy text: ', err);
         });
@@ -559,7 +562,7 @@ class ChatApp {
     async handleLogout() {
         const token = localStorage.getItem('token');
         if (!token) {
-            this.quoteDiv.style.display = 'block'; // Show quote on logout
+            this.quoteDiv.style.display = 'block';
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -575,7 +578,7 @@ class ChatApp {
                 this.renderChatHistory();
                 this.renderMessages();
                 this.renderUploadedPdfs();
-                this.quoteDiv.style.display = 'block'; // Show quote after logout
+                this.quoteDiv.style.display = 'block';
                 this.loginDiv.style.display = 'block';
                 this.chatAppDiv.style.display = 'none';
             } else {
