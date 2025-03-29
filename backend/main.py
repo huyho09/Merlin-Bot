@@ -3,6 +3,7 @@ import uuid
 import json
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -10,6 +11,8 @@ import io
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
+import googlemaps  # Add this import for Google Maps Places API
+import urllib.parse  # For URL encoding
 
 load_dotenv()
 
@@ -29,13 +32,18 @@ CORS(app)
 #CORS(app, supports_credentials=True, origins=get_allowed_origins())
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+gmaps = googlemaps.Client(key=os.getenv("GOOGLE_API_KEY"))  # Replace with your Google Maps API key
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_API_KEY")  # Use the same key for Embed API
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(150), nullable=False)
     token = db.Column(db.String(36), unique=True, nullable=True)
+    latitude = db.Column(db.Float, nullable=True)  # Added for location
+    longitude = db.Column(db.Float, nullable=True)  # Added for location
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -63,6 +71,70 @@ def token_required(f):
         request.user = user
         return f(*args, **kwargs)
     return decorated
+
+# New endpoint to update user location
+@app.route('/api/users/location', methods=['PUT'])
+@token_required
+def update_user_location():
+    data = request.get_json()
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    if latitude is None or longitude is None:
+        return jsonify({"error": "Latitude and longitude are required"}), 400
+    user = request.user
+    user.latitude = latitude
+    user.longitude = longitude
+    db.session.commit()
+    return jsonify({"message": "Location updated successfully"}), 200
+
+# Helper function to fetch restaurants
+def get_restaurants(latitude, longitude, keywords=None, radius=1000):
+    params = {
+        'location': (latitude, longitude),
+        'radius': radius,  # Default 1 km radius
+        'type': 'restaurant'
+    }
+    if keywords:
+        params['keyword'] = ' '.join(keywords)
+    try:
+        results = gmaps.places_nearby(**params)
+        return results.get('results', [])
+    except Exception as e:
+        print(f"Error fetching restaurants: {e}")
+        return []
+
+# Helper function to extract food keywords
+def extract_food_keywords(message):
+    food_types = [
+        'Italian', 'Chinese', 'Japanese', 'Mexican', 'Indian', 'American', 'French', 
+        'Mediterranean', 'Middle Eastern', 'Vietnamese', 'Thai', 'Greek', 'Spanish', 
+        'German', 'Russian', 'African', 'Caribbean', 'South American', 'Pizza', 
+        'Burger', 'Sandwich', 'Sushi', 'Tapas', 'Steak', 'Seafood', 'Vegetarian', 
+        'Vegan', 'Gluten-free'
+    ]
+    lower_message = message.lower()
+    return [food for food in food_types if food.lower() in lower_message]
+
+# Helper function to format restaurant data with iframe
+def format_restaurants(restaurants):
+    if not restaurants:
+        return "No restaurants found nearby.\n"
+    formatted = "Nearby restaurants:\n"
+    for r in restaurants[:3]:  # Limit to top 3 for brevity
+        name = r.get('name', 'Unknown')
+        rating = r.get('rating', 'N/A')
+        vicinity = r.get('vicinity', 'Unknown location')
+        lat = r['geometry']['location']['lat']
+        lng = r['geometry']['location']['lng']
+        # Generate Google Maps Embed iframe URL
+        query = urllib.parse.quote(f"{name}, {vicinity}")
+        iframe_url = f"https://www.google.com/maps/embed/v1/place?key={GOOGLE_MAPS_API_KEY}&q={query}&center={lat},{lng}&zoom=15"
+        formatted += (
+            f"- **{name}** (Rating: {rating}, Location: {vicinity})\n"
+            f"  Here's a map:\n"
+            f"  <iframe width='100%' height='300' frameborder='0' style='border:0' src='{iframe_url}' allowfullscreen></iframe>\n"
+        )
+    return formatted
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -226,6 +298,44 @@ def send_message(chat_id):
     openai_messages = [{"role": "system", "content": system_message}]
     openai_messages.extend(messages)
     openai_messages.append({"role": "user", "content": message})
+
+    # Restaurant suggestion logic with iframe
+    if any(keyword in message.lower() for keyword in ['restaurant', 'eat', 'food']):
+        user = request.user
+        if user.latitude is None or user.longitude is None:
+            response = "Please share your location first by clicking the 'Share Location' button."
+            messages.append({"role": "user", "content": message})
+            messages.append({"role": "assistant", "content": response})
+            chat.messages = json.dumps(messages)
+            db.session.commit()
+            return jsonify({"response": response})
+        else:
+            keywords = extract_food_keywords(message)
+            restaurants = get_restaurants(user.latitude, user.longitude, keywords)
+            formatted_restaurants = format_restaurants(restaurants)
+            prompt = (
+                f"User's location: ({user.latitude}, {user.longitude})\n"
+                f"User's message: {message}\n"
+                f"{formatted_restaurants}\n"
+                "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
+                "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
+                "Include the provided iframe maps in your response for each restaurant. "
+                "Ask follow-up questions to clarify their food interests if needed."
+            )
+            try:
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[{"role": "system", "content": system_message}, {"role": "user", "content": prompt}],
+                    max_tokens=4096
+                )
+                ai_response = response.choices[0].message.content
+                messages.append({"role": "user", "content": message})
+                messages.append({"role": "assistant", "content": ai_response})
+                chat.messages = json.dumps(messages)
+                db.session.commit()
+                return jsonify({"response": ai_response})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
 
     try:
         response = openai_client.chat.completions.create(

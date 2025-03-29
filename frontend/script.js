@@ -32,6 +32,7 @@ class ChatApp {
         this.loginDiv = document.getElementById('loginForm');
         this.quoteDiv = document.getElementById('quote');
         this.logoutBtn = document.getElementById('logoutBtn');
+        this.shareLocationBtn = document.getElementById('shareLocationBtn'); // New element
     }
 
     bindEvents() {
@@ -74,6 +75,41 @@ class ChatApp {
             this.handleLogin();
         });
         this.logoutBtn.addEventListener('click', () => this.handleLogout());
+        this.shareLocationBtn.addEventListener('click', () => this.shareLocation()); // New event
+    }
+
+    // New method to handle location sharing
+    async shareLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    const token = localStorage.getItem('token');
+                    try {
+                        const response = await fetch(`${API_BASE}/api/users/location`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': token,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ latitude, longitude })
+                        });
+                        if (!response.ok) throw new Error('Failed to update location');
+                        alert('Location shared successfully!');
+                    } catch (error) {
+                        console.error('Error sharing location:', error);
+                        alert('Failed to share location: ' + error.message);
+                    }
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    alert('Unable to get location: ' + error.message);
+                }
+            );
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
     }
 
     async checkLoginStatus() {
