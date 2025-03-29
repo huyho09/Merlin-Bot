@@ -30,6 +30,7 @@ class ChatApp {
         this.loginForm = document.getElementById('loginFormElement');
         this.chatAppDiv = document.getElementById('chatApp');
         this.loginDiv = document.getElementById('loginForm');
+        this.quoteDiv = document.getElementById('quote'); // Added quote div
         this.logoutBtn = document.getElementById('logoutBtn');
     }
 
@@ -79,6 +80,7 @@ class ChatApp {
         const token = localStorage.getItem('token');
         if (!token) {
             this.loadingDiv.style.display = 'none';
+            this.quoteDiv.style.display = 'block'; // Show quote with login
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -91,6 +93,7 @@ class ChatApp {
             const data = await response.json();
             if (data.logged_in) {
                 this.loadingDiv.style.display = 'none';
+                this.quoteDiv.style.display = 'none'; // Hide quote when logged in
                 this.loginDiv.style.display = 'none';
                 this.chatAppDiv.style.display = 'block';
                 if (this.isFirstLoad) {
@@ -102,6 +105,7 @@ class ChatApp {
             } else {
                 localStorage.removeItem('token');
                 this.loadingDiv.style.display = 'none';
+                this.quoteDiv.style.display = 'block'; // Show quote when not logged in
                 this.loginDiv.style.display = 'block';
                 this.chatAppDiv.style.display = 'none';
             }
@@ -109,6 +113,7 @@ class ChatApp {
             console.error('Error checking login status:', error);
             localStorage.removeItem('token');
             this.loadingDiv.style.display = 'none';
+            this.quoteDiv.style.display = 'block'; // Show quote on error
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
         }
@@ -126,6 +131,7 @@ class ChatApp {
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem('token', data.token);
+                this.quoteDiv.style.display = 'none'; // Hide quote on successful login
                 this.loginDiv.style.display = 'none';
                 this.chatAppDiv.style.display = 'block';
                 if (this.isFirstLoad) {
@@ -146,6 +152,7 @@ class ChatApp {
     async loadChats() {
         const token = localStorage.getItem('token');
         if (!token) {
+            this.quoteDiv.style.display = 'block'; // Show quote if token missing
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -172,6 +179,7 @@ class ChatApp {
         const token = localStorage.getItem('token');
         if (!token) {
             alert('Please log in to create a new chat.');
+            this.quoteDiv.style.display = 'block'; // Show quote if not logged in
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -549,6 +557,7 @@ class ChatApp {
     async handleLogout() {
         const token = localStorage.getItem('token');
         if (!token) {
+            this.quoteDiv.style.display = 'block'; // Show quote on logout
             this.loginDiv.style.display = 'block';
             this.chatAppDiv.style.display = 'none';
             return;
@@ -564,6 +573,7 @@ class ChatApp {
                 this.renderChatHistory();
                 this.renderMessages();
                 this.renderUploadedPdfs();
+                this.quoteDiv.style.display = 'block'; // Show quote after logout
                 this.loginDiv.style.display = 'block';
                 this.chatAppDiv.style.display = 'none';
             } else {
