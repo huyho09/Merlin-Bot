@@ -246,7 +246,21 @@ body {
     font-size: 1.1rem;
 }
 
-/* Responsive Adjustments */
+/* Adjust code-snippet to work with Prism.js */
+.code-snippet pre {
+    background-color: #2d2d2d; /* Matches your existing theme */
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.code-snippet code {
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Responsive Mobile Adjustments */
 @media (max-width: 767.98px) {
     .sidebar {
         position: fixed;

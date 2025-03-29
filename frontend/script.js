@@ -418,13 +418,15 @@ class ChatApp {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
 
-                // Process code blocks
+                // Process code blocks for Prism.js
                 const codeBlocks = tempDiv.querySelectorAll('pre code');
-                codeBlocks.forEach(code => {
+                codeBlocks.forEach((code, index) => {
                     const pre = code.parentElement;
+                    const language = code.className ? code.className.replace('language-', '') : 'plaintext';
+                    code.className = `language-${language}`; // Ensure Prism.js recognizes the language
                     const snippetDiv = document.createElement('div');
                     snippetDiv.className = 'code-snippet';
-                    snippetDiv.appendChild(pre.cloneNode(true));
+                    snippetDiv.innerHTML = `<pre><code class="language-${language}">${code.textContent}</code></pre>`;
 
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'copy-btn';
@@ -436,6 +438,7 @@ class ChatApp {
                 });
 
                 div.appendChild(tempDiv);
+                Prism.highlightAllUnder(div); // Apply Prism.js highlighting
             } else {
                 div.innerHTML = msg.content;
             }
@@ -444,7 +447,6 @@ class ChatApp {
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     }
 
-    // New function to handle copying code to clipboard
     copyToClipboard(codeText, button) {
         navigator.clipboard.writeText(codeText).then(() => {
             button.classList.add('copied');
@@ -585,7 +587,6 @@ class ChatApp {
         }
     }
 
-    // Helper method to display error messages
     async renderMessagesWithError(errorMessage) {
         const token = localStorage.getItem('token');
         try {
