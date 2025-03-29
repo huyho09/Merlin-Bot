@@ -145,6 +145,55 @@ body {
     margin: 5px 0;
 }
 
+/* New styles for code snippets */
+.code-snippet {
+    position: relative;
+    background-color: #2d2d2d;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.code-snippet pre {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+.code-snippet code {
+    font-family: 'Courier New', Courier, monospace;
+    color: #e0e0e0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #555;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 5px;
+    cursor: pointer;
+    display: none; /* Hidden by default on desktop */
+}
+
+.code-snippet:hover .copy-btn {
+    display: block; /* Show on hover for desktop */
+}
+
+.copy-btn:hover {
+    background-color: #777;
+}
+
+.copy-btn.copied {
+    background-color: #28a745; /* Green when copied */
+}
+
 .list-group-item {
     cursor: pointer;
     background-color: #2a2a2a;
@@ -221,5 +270,10 @@ body {
 
     #toggleSidebar {
         margin-left: 10px;
+    }
+
+    /* Always show copy button on mobile */
+    .copy-btn {
+        display: block;
     }
 }

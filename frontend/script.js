@@ -1,7 +1,8 @@
 // Use for PROD
 //const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
-// Local Test
+// Local Test. Normally it will be port 5000 as default but I do not remember what app is using my port 5000. I tried to kill it but it is not working
+// You can try port 5000 on your end
 const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
@@ -403,14 +404,50 @@ class ChatApp {
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
+            
             if (msg.role === 'assistant' && !msg.isThinking) {
-                div.innerHTML = marked.parse(msg.content);
+                const htmlContent = marked.parse(msg.content);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+
+                // Process code blocks
+                const codeBlocks = tempDiv.querySelectorAll('pre code');
+                codeBlocks.forEach(code => {
+                    const pre = code.parentElement;
+                    const snippetDiv = document.createElement('div');
+                    snippetDiv.className = 'code-snippet';
+                    snippetDiv.appendChild(pre.cloneNode(true));
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                    copyBtn.addEventListener('click', () => this.copyToClipboard(code.textContent, copyBtn));
+                    snippetDiv.appendChild(copyBtn);
+
+                    pre.parentNode.replaceChild(snippetDiv, pre);
+                });
+
+                div.appendChild(tempDiv);
             } else {
                 div.innerHTML = msg.content;
             }
             this.chatMessages.appendChild(div);
         });
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    // New function to handle copying code to clipboard
+    copyToClipboard(codeText, button) {
+        navigator.clipboard.writeText(codeText).then(() => {
+            button.classList.add('copied');
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => {
+                button.classList.remove('copied');
+                button.innerHTML = '<i class="fas fa-copy"></i>';
+            }, 2000); // Reset after 2 seconds
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
     }
 
     async renderUploadedPdfs() {
