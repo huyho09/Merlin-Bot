@@ -1,8 +1,8 @@
 // Use for PROD
-const API_BASE = 'https://chatbot-clone-1.onrender.com';
+//const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test
-//const API_BASE = 'http://localhost:5001';
+const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {

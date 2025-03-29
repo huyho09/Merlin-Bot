@@ -208,20 +208,25 @@ def send_message(chat_id):
     chat = Chat.query.filter_by(id=chat_id, user_id=request.user.id).first()
     if not chat:
         return jsonify({"error": "Chat not found"}), 404
-    
+
     message = request.form.get("message")
     if not message:
         return jsonify({"error": "Message is required"}), 400
-    
+
     pdf_text = request.form.get("pdf_text", "")
     messages = json.loads(chat.messages)
-    
-    openai_messages = []
+
+    # New system message
+    base_system_message = "You are a helpful assistant who provides detailed and comprehensive responses to users' questions. Always aim to give thorough explanations and additional information where relevant."
     if pdf_text:
-        openai_messages.append({"role": "system", "content": f"You have access to the following documents: {pdf_text}"})
+        system_message = f"{base_system_message}\n\nYou have access to the following documents:\n{pdf_text}"
+    else:
+        system_message = base_system_message
+
+    openai_messages = [{"role": "system", "content": system_message}]
     openai_messages.extend(messages)
     openai_messages.append({"role": "user", "content": message})
-    
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o",
@@ -232,8 +237,7 @@ def send_message(chat_id):
         messages.append({"role": "user", "content": message})
         messages.append({"role": "assistant", "content": ai_response})
         chat.messages = json.dumps(messages)
-        chat.uploaded_pdfs = json.dumps([])
-        chat.pdf_text = ''
+        # Do not clear pdf_text and uploaded_pdfs
         db.session.commit()
         return jsonify({"response": ai_response})
     except Exception as e:
