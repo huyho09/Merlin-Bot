@@ -230,6 +230,22 @@ body {
     color: #e0e0e0;
 }
 
+/* New styles for quote */
+.quote {
+    text-align: center;
+    padding: 20px;
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    color: #d0d0d0;
+    font-style: italic;
+}
+
+.quote p {
+    margin: 5px 0;
+    font-size: 1.1rem;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 767.98px) {
     .sidebar {
@@ -275,5 +291,10 @@ body {
     /* Always show copy button on mobile */
     .copy-btn {
         display: block;
+    }
+
+    /* Adjust quote font size for mobile */
+    .quote p {
+        font-size: 1rem;
     }
 }
