@@ -28,8 +28,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
 CORS(app)
-# Apply CORS with dynamic origins
-#CORS(app, supports_credentials=True, origins=get_allowed_origins())
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -74,7 +72,6 @@ def token_required(f):
         request.user = user
         return f(*args, **kwargs)
     return decorated
-
 
 # New endpoint to update user location
 @app.route('/api/users/location', methods=['PUT'])
@@ -292,8 +289,11 @@ def send_message(chat_id):
     pdf_text = request.form.get("pdf_text", "")
     messages = json.loads(chat.messages)
 
-    # New system message
-    base_system_message = "You are a helpful assistant who provides detailed and comprehensive responses to users' questions. Always aim to give thorough explanations and additional information where relevant."
+    # System message setup
+    base_system_message = (
+        "You are a helpful assistant. Provide detailed and comprehensive responses to the user's most recent question. "
+        "Do not include information from previous topics or unrelated suggestions unless the current question explicitly refers to them."
+    )
     if pdf_text:
         system_message = f"{base_system_message}\n\nYou have access to the following documents:\n{pdf_text}"
     else:
@@ -303,8 +303,16 @@ def send_message(chat_id):
     openai_messages.extend(messages)
     openai_messages.append({"role": "user", "content": message})
 
-    # Restaurant suggestion logic with iframe
-    if any(keyword in message.lower() for keyword in ['restaurant', 'eat', 'food']):
+    # Restaurant suggestion logic
+    restaurant_keywords = ['restaurant', 'eat', 'food', 'dinner', 'lunch', 'meal']
+    intent_keywords = ['near me', 'find', 'where', 'suggest', 'recommend', 'looking for', 'want to eat']
+    lower_message = message.lower()
+    
+    # Strict condition: both a restaurant keyword and an intent keyword must be present
+    is_restaurant_query = any(keyword in lower_message for keyword in restaurant_keywords) and \
+                         any(intent in lower_message for intent in intent_keywords)
+    print(f'Is Restaurant query: {is_restaurant_query}')
+    if is_restaurant_query:
         user = request.user
         if user.latitude is None or user.longitude is None:
             response = "Please share your location first by clicking the 'Share Location' button."
@@ -314,18 +322,24 @@ def send_message(chat_id):
             db.session.commit()
             return jsonify({"response": response})
         else:
-            keywords = extract_food_keywords(message)
-            restaurants = get_restaurants(user.latitude, user.longitude, keywords)
-            formatted_restaurants = format_restaurants(restaurants)
-            prompt = (
-                f"User's location: ({user.latitude}, {user.longitude})\n"
-                f"User's message: {message}\n"
-                f"{formatted_restaurants}\n"
-                "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
-                "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
-                "Include the provided iframe maps in your response for each restaurant. "
-                "Ask follow-up questions to clarify their food interests if needed."
-            )
+            print(f'Weird Flow: {is_restaurant_query}')
+            if is_restaurant_query:
+                print("Error")
+                keywords = extract_food_keywords(message)
+                restaurants = get_restaurants(user.latitude, user.longitude, keywords)
+                formatted_restaurants = format_restaurants(restaurants)
+                prompt = (
+                    f"User's location: ({user.latitude}, {user.longitude})\n"
+                    f"User's message: {message}\n"
+                    f"{formatted_restaurants}\n"
+                    "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
+                    "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
+                    "Include the provided iframe maps in your response for each restaurant. "
+                    "Ask follow-up questions to clarify their food interests if needed."
+                )
+            else:
+                print("Normal Flow")
+                prompt = base_system_message
             try:
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
@@ -341,6 +355,7 @@ def send_message(chat_id):
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
+    # Default OpenAI response for all other queries
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o",
@@ -351,7 +366,6 @@ def send_message(chat_id):
         messages.append({"role": "user", "content": message})
         messages.append({"role": "assistant", "content": ai_response})
         chat.messages = json.dumps(messages)
-        # Do not clear pdf_text and uploaded_pdfs
         db.session.commit()
         return jsonify({"response": ai_response})
     except Exception as e:
