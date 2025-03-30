@@ -368,13 +368,17 @@ class ChatApp {
         }
 
         this.chatHistory.innerHTML = '';
+        const maxLength = 20; // Set maximum length for chat name display
         chats.forEach(chat => {
             const item = document.createElement('div');
             item.className = `list-group-item d-flex justify-content-between align-items-center ${chat.id === this.currentChatId ? 'active-chat' : ''}`;
             
             const chatNameSpan = document.createElement('span');
             chatNameSpan.className = 'chat-name flex-grow-1';
-            chatNameSpan.textContent = chat.name || `Chat ${chat.id.slice(-4)}`;
+            const fullName = chat.name || `Chat ${chat.id.slice(-4)}`;
+            // Truncate name if longer than maxLength
+            chatNameSpan.textContent = fullName.length > maxLength ? fullName.substring(0, maxLength - 3) + '...' : fullName;
+            chatNameSpan.setAttribute('title', fullName); // Full name on hover/tap
             chatNameSpan.addEventListener('click', () => {
                 this.currentChatId = chat.id;
                 this.renderChatHistory();
@@ -428,7 +432,7 @@ class ChatApp {
 
     async renderMessages(messages = null) {
         if (!this.currentChatId) return;
-    
+
         const token = localStorage.getItem('token');
         if (!messages) {
             try {
@@ -444,12 +448,12 @@ class ChatApp {
                 return;
             }
         }
-    
+
         this.chatMessages.innerHTML = '';
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
-    
+            
             if (msg.role === 'assistant' && !msg.isThinking) {
                 // Check if the message content is likely HTML (contains <, >, and src=)
                 if (msg.content.startsWith('<') && msg.content.endsWith('>') && msg.content.includes(' src=')) {
@@ -458,7 +462,7 @@ class ChatApp {
                     const htmlContent = marked.parse(msg.content, { sanitize: false });
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = htmlContent;
-    
+
                     // Process code blocks with Prism.js
                     const codeBlocks = tempDiv.querySelectorAll('pre code');
                     codeBlocks.forEach((code, index) => {
@@ -467,30 +471,30 @@ class ChatApp {
                         if (language === 'vue') {
                             language = 'markup';
                         }
-                        code.className = `language-${language}`
+                        code.className = `language-${language}`;
                         const snippetDiv = document.createElement('div');
                         snippetDiv.className = 'code-snippet';
                         snippetDiv.innerHTML = `<pre><code class="language-${language}">${code.textContent}</code></pre>`;
-    
+
                         const copyBtn = document.createElement('button');
-                        copyBtn.className = 'copyBtn';
+                        copyBtn.className = 'copy-btn';
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-                        copyBtn.addEventListener('click', () => this.copyToClipBoard(code.textContent, copyBtn));
+                        copyBtn.addEventListener('click', () => this.copyToClipboard(code.textContent, copyBtn));
                         snippetDiv.appendChild(copyBtn);
-    
-                        pre.parentElement.replaceChild(snippetDiv, pre);
+
+                        pre.parentNode.replaceChild(snippetDiv, pre);
                     });
-    
+
                     div.appendChild(tempDiv);
                     Prism.highlightAllUnder(div);
-    
+
                     // Ensure iframes are styled and functional
-                    const iframes = div.querySelectorAll(' iframe');
-                    iframes.forEach( iframe => {
+                    const iframes = div.querySelectorAll('iframe');
+                    iframes.forEach(iframe => {
                         iframe.style.width = '100%';
                         iframe.style.height = '300px';
                         iframe.style.border = '0';
-                        iframe.setAttribute('allowfullScreen', '');
+                        iframe.setAttribute('allowfullscreen', '');
                     });
                 }
             } else {
