@@ -89,7 +89,7 @@ def update_user_location():
     return jsonify({"message": "Location updated successfully"}), 200
 
 # Helper function to fetch restaurants
-def get_restaurants(latitude, longitude, keywords=None, radius=1000):
+def get_restaurants(latitude, longitude, keywords=None, radius=3000):
     params = {
         'location': (latitude, longitude),
         'radius': radius,  # Default 1 km radius
@@ -333,9 +333,14 @@ def send_message(chat_id):
                     f"User's message: {message}\n"
                     f"{formatted_restaurants}\n"
                     "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
+                    "For each restaurant, provide the following details:\n"
+                    "1. Name of the restaurant\n"
+                    "2. Notable reason(s) to recommend it\n"
+                    "3. Address\n"
+                    "4. Google Maps Link: Use this format: put the name of the restaurant as a link: https://www.google.com/maps/search/?api=1&query=<LAT>,<LNG>\n"
+                    "5. Google Maps: display an iframe of google map"
                     "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
-                    "Include the provided iframe maps in your response for each restaurant. "
-                    "Ask follow-up questions to clarify their food interests if needed."
+                    "Ask follow-up questions if needed to clarify their food interests."
                 )
             else:
                 print("Normal Flow")
