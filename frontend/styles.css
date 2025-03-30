@@ -195,6 +195,7 @@ body {
 }
 
 .list-group-item {
+    position: relative;           /* For positioning the tooltip */
     cursor: pointer;
     background-color: #2a2a2a;
     color: #e0e0e0;
@@ -219,6 +220,30 @@ body {
     position: absolute;
     right: 0;
     left: auto;
+}
+
+.chat-name {
+    white-space: nowrap;          /* Prevent line breaks */
+    overflow: hidden;             /* Hide overflow text */
+    text-overflow: ellipsis;      /* Add ellipsis for truncated text */
+    max-width: 100%;              /* Limit width to container */
+    cursor: pointer;              /* Indicate interactivity */
+}
+
+/* Tooltip-like effect for full name on hover (web) */
+.chat-name:hover::after {
+    content: attr(title);         /* Use the title attribute for full name */
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    z-index: 1000;
+    top: -30px;                   /* Position above the chat name */
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 #loading {
@@ -307,8 +332,21 @@ body {
         display: block;
     }
 
-    /* Adjust quote font size for mobile */
+    /* Updated quote styles for mobile */
     .quote p {
-        font-size: 1rem;
+        font-size: 0.85rem;       /* Reduce font size to fit on one line */
+        white-space: nowrap;      /* Prevent text from breaking to new lines */
+        overflow: hidden;         /* Hide any overflow */
+        text-overflow: ellipsis;  /* Add ellipsis if text still overflows */
+    }
+
+    /* Mobile-specific adjustments for chat-name */
+    .chat-name {
+        max-width: 150px;         /* Limit width on mobile to ensure ellipsis works */
+    }
+
+    /* Remove hover effect on mobile and rely on tap */
+    .chat-name:hover::after {
+        display: none;            /* Disable hover tooltip on mobile */
     }
 }
