@@ -292,7 +292,9 @@ def send_message(chat_id):
     # System message setup
     base_system_message = (
         "You are a helpful assistant. Provide detailed and comprehensive responses to the user's most recent question. "
-        "Do not include information from previous topics or unrelated suggestions unless the current question explicitly refers to them."
+        "Do not include information from previous topics or unrelated suggestions unless the current question explicitly refers to them. "
+        "When providing any code snippet, regardless of the language, if it is HTML code snippet (or ```html), wrap it in a <pre> and <code class='language-markup'> block" 
+        "For example: <pre><code class='language-markup'><!-- HTML code here -->&lt;div class='example'&gt;Hello World&lt;/div&gt;</code></pre>"
     )
     if pdf_text:
         system_message = f"{base_system_message}\n\nYou have access to the following documents:\n{pdf_text}"
