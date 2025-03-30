@@ -1,9 +1,9 @@
 // Use for PROD
-const API_BASE = 'https://chatbot-clone-1.onrender.com';
+//const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test. Normally it will be port 5000 as default but I do not remember what app is using my port 5000. I tried to kill it but it is not working
 // You can try port 5000 on your end
-//const API_BASE = 'http://localhost:5001';
+const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {
@@ -428,7 +428,7 @@ class ChatApp {
 
     async renderMessages(messages = null) {
         if (!this.currentChatId) return;
-
+    
         const token = localStorage.getItem('token');
         if (!messages) {
             try {
@@ -444,40 +444,55 @@ class ChatApp {
                 return;
             }
         }
-
+    
         this.chatMessages.innerHTML = '';
         messages.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.role === 'user' ? 'user-message' : (msg.isThinking ? 'thinking-message' : 'ai-message')}`;
-            
+    
             if (msg.role === 'assistant' && !msg.isThinking) {
-                const htmlContent = marked.parse(msg.content);
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = htmlContent;
-
-                const codeBlocks = tempDiv.querySelectorAll('pre code');
-                codeBlocks.forEach((code, index) => {
-                    const pre = code.parentElement;
-                    let language = code.className ? code.className.replace('language-', '') : 'plaintext';
-                    if (language === 'vue') {
-                        language = 'markup';
-                    }
-                    code.className = `language-${language}`;
-                    const snippetDiv = document.createElement('div');
-                    snippetDiv.className = 'code-snippet';
-                    snippetDiv.innerHTML = `<pre><code class="language-${language}">${code.textContent}</code></pre>`;
-
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-                    copyBtn.addEventListener('click', () => this.copyToClipboard(code.textContent, copyBtn));
-                    snippetDiv.appendChild(copyBtn);
-
-                    pre.parentNode.replaceChild(snippetDiv, pre);
-                });
-
-                div.appendChild(tempDiv);
-                Prism.highlightAllUnder(div);
+                // Check if the message content is likely HTML (contains <, >, and src=)
+                if (msg.content.startsWith('<') && msg.content.endsWith('>') && msg.content.includes(' src=')) {
+                    div.innerHTML = msg.content;
+                } else {
+                    const htmlContent = marked.parse(msg.content, { sanitize: false });
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = htmlContent;
+    
+                    // Process code blocks with Prism.js
+                    const codeBlocks = tempDiv.querySelectorAll('pre code');
+                    codeBlocks.forEach((code, index) => {
+                        const pre = code.parentElement;
+                        let language = code.className ? code.className.replace('language-', '') : 'plaintext';
+                        if (language === 'vue') {
+                            language = 'markup';
+                        }
+                        code.className = `language-${language}`
+                        const snippetDiv = document.createElement('div');
+                        snippetDiv.className = 'code-snippet';
+                        snippetDiv.innerHTML = `<pre><code class="language-${language}">${code.textContent}</code></pre>`;
+    
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'copyBtn';
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.addEventListener('click', () => this.copyToClipBoard(code.textContent, copyBtn));
+                        snippetDiv.appendChild(copyBtn);
+    
+                        pre.parentElement.replaceChild(snippetDiv, pre);
+                    });
+    
+                    div.appendChild(tempDiv);
+                    Prism.highlightAllUnder(div);
+    
+                    // Ensure iframes are styled and functional
+                    const iframes = div.querySelectorAll(' iframe');
+                    iframes.forEach( iframe => {
+                        iframe.style.width = '100%';
+                        iframe.style.height = '300px';
+                        iframe.style.border = '0';
+                        iframe.setAttribute('allowfullScreen', '');
+                    });
+                }
             } else {
                 div.innerHTML = msg.content;
             }
