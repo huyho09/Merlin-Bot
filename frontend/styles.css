@@ -160,13 +160,16 @@ body {
     padding: 0;
     background: none;
     border: none;
+    white-space: pre; /* Preserve whitespace and line breaks */
+    overflow-x: auto; /* Allow horizontal scrolling for long lines */
 }
 
 .code-snippet code {
     font-family: 'Courier New', Courier, monospace;
     color: #e0e0e0;
-    white-space: pre-wrap;
-    word-break: break-all;
+    white-space: pre; /* Preserve whitespace and line breaks */
+    word-break: normal; /* Prevent breaking words */
+    display: block; /* Ensure the code block takes the full width */
 }
 
 .copy-btn {
@@ -281,8 +284,8 @@ body {
 
 .code-snippet code {
     font-family: 'Courier New', Courier, monospace;
-    white-space: pre-wrap;
-    word-break: break-all;
+    white-space: pre;
+    word-break: normal;
 }
 
 /* Styles for the send icon inside the textarea */
