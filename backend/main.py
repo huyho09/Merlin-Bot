@@ -325,28 +325,24 @@ def send_message(chat_id):
             return jsonify({"response": response})
         else:
             print(f'Weird Flow: {is_restaurant_query}')
-            if is_restaurant_query:
-                print("Error")
-                keywords = extract_food_keywords(message)
-                restaurants = get_restaurants(user.latitude, user.longitude, keywords)
-                formatted_restaurants = format_restaurants(restaurants)
-                prompt = (
-                    f"User's location: ({user.latitude}, {user.longitude})\n"
-                    f"User's message: {message}\n"
-                    f"{formatted_restaurants}\n"
-                    "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
-                    "For each restaurant, provide the following details:\n"
-                    "1. Name of the restaurant\n"
-                    "2. Notable reason(s) to recommend it\n"
-                    "3. Address\n"
-                    "4. Google Maps Link: Use this format: put the name of the restaurant as a link: https://www.google.com/maps/search/?api=1&query=<LAT>,<LNG>\n"
-                    "5. Google Maps: display an iframe of google map"
-                    "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
-                    "Ask follow-up questions if needed to clarify their food interests."
+            print("Error")
+            keywords = extract_food_keywords(message)
+            restaurants = get_restaurants(user.latitude, user.longitude, keywords)
+            formatted_restaurants = format_restaurants(restaurants)
+            prompt = (
+                f"User's location: ({user.latitude}, {user.longitude})\n"
+                f"User's message: {message}\n"
+                f"{formatted_restaurants}\n"
+                "Task: Suggest one or more restaurants based on the user's preferences (or lack thereof). "
+                "For each restaurant, provide the following details:\n"
+                "1. Name of the restaurant\n"
+                "2. Notable reason(s) to recommend it\n"
+                "3. Address\n"
+                "4. Google Maps Link: Use this format: put the name of the restaurant as a link: https://www.google.com/maps/search/?api=1&query=<LAT>,<LNG>\n"
+                "5. Google Maps: display an iframe of google map"
+                "If preferences are unclear, suggest a variety of options and explain why each is a good choice. "
+                "Ask follow-up questions if needed to clarify their food interests."
                 )
-            else:
-                print("Normal Flow")
-                prompt = base_system_message
             try:
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
