@@ -137,3 +137,18 @@ dist
 
 # Local Netlify folder
 .netlify
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# SQLite temporary files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Other common ignores
+*.log
+*.tmp
+*.swp
