@@ -362,7 +362,7 @@ def send_message(chat_id):
     # Default OpenAI response for all other queries
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-0.1-mini",
             messages=openai_messages,
             max_tokens=4096
         )
