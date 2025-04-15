@@ -27,7 +27,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
-CORS(app, supports_credentials=True)
+#CORS(app, supports_credentials=True)
+CORS(app)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
