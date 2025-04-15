@@ -362,9 +362,10 @@ def send_message(chat_id):
     # Default OpenAI response for all other queries
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-2025-04-14",
             messages=openai_messages,
-            max_tokens=4096
+            #max_tokens=4096,
+            temperature=1
         )
         ai_response = response.choices[0].message.content
         messages.append({"role": "user", "content": message})

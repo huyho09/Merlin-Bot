@@ -6,7 +6,7 @@ const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // Local Test. Normally it will be port 5000 as default but I do not remember what app is using my port 5000. I tried to kill it but it is not working
 // You can try port 5000 on your end
-//const API_BASE = 'https://localhost:5001';
+//const API_BASE = 'http://localhost:5001';
 
 class ChatApp {
     constructor() {
