@@ -2,11 +2,11 @@
 //const API_BASE = 'https://chatbot-clone-1.onrender.com';
 
 // VPS
-const API_BASE = 'http://14.225.254.107:5001';
+//const API_BASE = 'http://14.225.254.107:5001';
 
 // Local Test. Normally it will be port 5000 as default but I do not remember what app is using my port 5000. I tried to kill it but it is not working
 // You can try port 5000 on your end
-//const API_BASE = 'http://localhost:5001';
+const API_BASE = 'https://localhost:5001';
 
 class ChatApp {
     constructor() {
@@ -96,6 +96,7 @@ class ChatApp {
                                 'Authorization': token,
                                 'Content-Type': 'application/json'
                             },
+                            credentials: 'include',
                             body: JSON.stringify({ latitude, longitude })
                         });
                         if (!response.ok) throw new Error('Failed to update location');
@@ -127,7 +128,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/check-login`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             const data = await response.json();
             if (data.logged_in) {
@@ -163,7 +165,8 @@ class ChatApp {
             const response = await fetch(`${API_BASE}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
             });
             const data = await response.json();
             if (response.ok) {
@@ -195,7 +198,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const chatsData = await response.json();
@@ -229,7 +233,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
@@ -267,7 +272,8 @@ class ChatApp {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/upload-pdfs`, {
                 method: 'POST',
                 headers: { 'Authorization': token },
-                body: formData
+                body: formData,
+                credentials: 'include'
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             await response.json();
@@ -290,6 +296,7 @@ class ChatApp {
                     'Authorization': token,
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ pdf_name: pdfName })
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -313,7 +320,8 @@ class ChatApp {
         try {
             const chatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!chatResponse.ok) throw new Error('Failed to fetch chat');
             const chatData = await chatResponse.json();
@@ -335,14 +343,16 @@ class ChatApp {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}/messages`, {
                 method: 'POST',
                 headers: { 'Authorization': token },
-                body: formData
+                body: formData,
+                credentials: 'include'
             });
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
 
             const updatedChatResponse = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             const updatedChat = await updatedChatResponse.json();
             this.renderMessages(updatedChat.messages);
@@ -364,7 +374,8 @@ class ChatApp {
         } else {
             const response = await fetch(`${API_BASE}/api/chats`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) return;
             chats = await response.json();
@@ -441,7 +452,8 @@ class ChatApp {
             try {
                 const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                     method: 'GET',
-                    headers: { 'Authorization': token }
+                    headers: { 'Authorization': token },
+                    credentials: 'include'
                 });
                 if (!response.ok) throw new Error('Failed to fetch messages');
                 const chatData = await response.json();
@@ -528,7 +540,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch chat');
             const chatData = await response.json();
@@ -560,7 +573,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch chat');
             const chatData = await response.json();
@@ -573,6 +587,7 @@ class ChatApp {
                         'Authorization': token,
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ name: newName })
                 });
                 if (!updateResponse.ok) throw new Error('Failed to rename chat');
@@ -589,20 +604,23 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch chat');
             const chatData = await response.json();
             if (confirm(`Are you sure you want to delete chat ${chatData.name || 'Chat ' + chatId.slice(-4)}?`)) {
                 const deleteResponse = await fetch(`${API_BASE}/api/chats/${chatId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': token }
+                    headers: { 'Authorization': token },
+                    credentials: 'include'
                 });
                 if (!deleteResponse.ok) throw new Error('Failed to delete chat');
                 if (this.currentChatId === chatId) {
                     const chatsResponse = await fetch(`${API_BASE}/api/chats`, {
                         method: 'GET',
-                        headers: { 'Authorization': token }
+                        headers: { 'Authorization': token },
+                        credentials: 'include'
                     });
                     const chats = await chatsResponse.json();
                     this.currentChatId = chats.length > 0 ? chats[0].id : null;
@@ -628,7 +646,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/logout`, {
                 method: 'POST',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (response.ok) {
                 localStorage.removeItem('token');
@@ -653,7 +672,8 @@ class ChatApp {
         try {
             const response = await fetch(`${API_BASE}/api/chats/${this.currentChatId}`, {
                 method: 'GET',
-                headers: { 'Authorization': token }
+                headers: { 'Authorization': token },
+                credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch chat');
             const chatData = await response.json();
