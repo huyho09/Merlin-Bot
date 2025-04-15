@@ -27,6 +27,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 
+#CORS(app, supports_credentials=True)
 CORS(app)
 
 db = SQLAlchemy(app)
@@ -389,4 +390,4 @@ if __name__ == '__main__':
         exit(1)
     init_db()
     port = int(os.getenv("PORT", 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host="0.0.0.0", port=5001, ssl_context=('cert.pem', 'key.pem'), debug=True)
