@@ -390,4 +390,4 @@ if __name__ == '__main__':
         exit(1)
     init_db()
     port = int(os.getenv("PORT", 5001))
-    app.run(host="0.0.0.0", port=5001, ssl_context=('cert.pem', 'key.pem'), debug=True)
+    app.run(host="0.0.0.0", port=port,debug=True)
