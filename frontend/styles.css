@@ -13,6 +13,8 @@ body {
     overflow-y: auto;
     height: 100vh;
     transition: transform 0.3s ease;
+    display: flex; /* Use flexbox for vertical alignment */
+    flex-direction: column; /* Stack items vertically */
 }
 
 .chat-container {
@@ -27,41 +29,62 @@ body {
     flex-grow: 1;
     overflow-y: auto;
     margin-bottom: 20px;
+    padding-right: 10px; /* Add some padding for scrollbar */
 }
 
 .pdf-upload-area {
     margin-bottom: 10px;
+    display: flex; /* Align items horizontally */
+    align-items: center; /* Center items vertically */
+    gap: 10px; /* Add space between buttons */
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
 }
 
 #uploadedPdfs {
-    margin: 0;
+    margin: 5px 0 10px 0; /* Adjusted margins */
     padding: 0;
+    max-height: 100px; /* Limit height */
+    overflow-y: auto; /* Allow scrolling if too many PDFs */
+    border: 1px solid #444; /* Optional border */
+    border-radius: 4px;
+    padding: 5px;
+    background-color: #2a2a2a; /* Slightly different background */
 }
 
 .pdf-item {
     display: flex;
     align-items: center;
-    margin: 5px 0;
+    justify-content: space-between; /* Space out name and remove button */
+    margin: 2px 0;
+    padding: 3px 6px;
+    background-color: #3a3a3a; /* Background for each item */
+    border-radius: 3px;
 }
 
 .pdf-item p {
-    margin: 0 10px 0 0;
-    font-size: 0.9rem;
+    margin: 0;
+    font-size: 0.85rem; /* Slightly smaller font */
     color: #ccc;
     word-break: break-word;
     flex-grow: 1;
+    margin-right: 10px; /* Space before remove button */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis if name is too long */
 }
 
 .remove-pdf {
     cursor: pointer;
-    color: #ff5555;
-    font-size: 1.2rem;
-    margin-left: 10px;
+    color: #ff6b6b; /* Softer red */
+    font-size: 1.1rem; /* Adjusted size */
+    line-height: 1; /* Ensure alignment */
+    padding: 0 4px; /* Small padding */
 }
 
 .remove-pdf:hover {
-    color: #ff9999;
+    color: #ff8f8f; /* Lighter red on hover */
 }
+
 
 .input-area {
     padding: 10px 0;
@@ -69,36 +92,41 @@ body {
 
 .message {
     margin: 10px 0;
-    padding: 10px;
-    border-radius: 5px;
-    max-width: 90%;
+    padding: 10px 15px; /* Adjusted padding */
+    border-radius: 8px; /* Slightly more rounded */
+    max-width: 85%; /* Slightly narrower max-width */
+    word-wrap: break-word; /* Ensure long words break */
 }
 
 .user-message {
-    background-color: #0d6efd;
+    background-color: #0d6efd; /* Bootstrap primary */
     color: #fff;
     margin-left: auto;
+    align-self: flex-end; /* Align to the right */
 }
 
 .ai-message {
     background-color: #3a3a3a;
     color: #e0e0e0;
     margin-right: auto;
+    align-self: flex-start; /* Align to the left */
 }
 
 .thinking-message {
     background-color: #3a3a3a;
     color: #e0e0e0;
     margin-right: auto;
-    padding: 10px;
-    border-radius: 5px;
-    max-width: 90%;
+    padding: 10px 15px;
+    border-radius: 8px;
+    max-width: 85%;
     display: flex;
     align-items: center;
+    min-height: 40px; /* Ensure it has some height */
 }
 
 .thinking-message .dots {
     display: inline-flex;
+    align-items: center; /* Vertically center dots */
 }
 
 .thinking-message .dot {
@@ -106,29 +134,25 @@ body {
     height: 8px;
     background-color: #bbb;
     border-radius: 50%;
-    margin: 0 2px;
-    animation: bounce 0.6s infinite alternate;
+    margin: 0 3px; /* Increased margin */
+    animation: bounce 1.4s infinite ease-in-out both; /* Smoother bounce */
 }
 
-.thinking-message .dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.thinking-message .dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
+.thinking-message .dot:nth-child(1) { animation-delay: -0.32s; }
+.thinking-message .dot:nth-child(2) { animation-delay: -0.16s; }
+.thinking-message .dot:nth-child(3) { animation-delay: 0s; }
 
 @keyframes bounce {
-    from {
-        transform: translateY(0);
-    }
-    to {
-        transform: translateY(-10px);
-    }
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1.0); }
 }
 
+
 .ai-message p {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px 0; /* Space below paragraphs */
+}
+.ai-message p:last-child {
+    margin-bottom: 0; /* No space after the last paragraph */
 }
 
 .ai-message strong {
@@ -137,117 +161,161 @@ body {
 }
 
 .ai-message ul, .ai-message ol {
-    margin: 0 0 10px 20px;
-    padding: 0;
+    margin: 10px 0 10px 20px; /* Consistent margins */
+    padding-left: 20px; /* Ensure padding for list markers */
 }
 
 .ai-message li {
     margin: 5px 0;
 }
 
-/* New styles for code snippets */
+/* Styles for code snippets */
 .code-snippet {
     position: relative;
-    background-color: #2d2d2d;
+    background-color: #2d2d2d; /* Darker background for contrast */
     border: 1px solid #555;
     border-radius: 5px;
-    padding: 10px;
-    margin: 10px 0;
+    margin: 15px 0; /* Increased margin */
+    overflow: hidden; /* Contain background and button */
 }
 
 .code-snippet pre {
     margin: 0;
-    padding: 0;
-    background: none;
+    padding: 12px 15px; /* More padding */
+    background: none; /* Background is on the container */
     border: none;
-    white-space: pre; /* Preserve whitespace and line breaks */
-    overflow-x: auto; /* Allow horizontal scrolling for long lines */
+    white-space: pre-wrap;   /* Wrap long lines but preserve formatting */
+    word-wrap: break-word; /* Break long words */
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+    color: #e0e0e0; /* Default code color */
+    font-size: 0.9rem; /* Slightly smaller font */
 }
 
 .code-snippet code {
-    font-family: 'Courier New', Courier, monospace;
-    color: #e0e0e0;
-    white-space: pre; /* Preserve whitespace and line breaks */
-    word-break: normal; /* Prevent breaking words */
-    display: block; /* Ensure the code block takes the full width */
+    font-family: 'Fira Code', 'Courier New', Courier, monospace; /* Use Fira Code if available */
+    white-space: inherit; /* Inherit wrapping from pre */
+    word-break: inherit;
+    display: block;
+    line-height: 1.5; /* Improve readability */
 }
 
+/* Copy Button Styles */
 .copy-btn {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #555;
+    top: 8px; /* Adjust position */
+    right: 8px;
+    background-color: rgba(85, 85, 85, 0.8); /* Semi-transparent */
     color: #fff;
     border: none;
-    border-radius: 3px;
-    padding: 5px;
+    border-radius: 4px; /* More rounded */
+    padding: 4px 8px; /* Adjust padding */
     cursor: pointer;
-    display: none; /* Hidden by default on desktop */
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease-in-out;
+    font-size: 0.8rem; /* Smaller font */
 }
 
 .code-snippet:hover .copy-btn {
-    display: block; /* Show on hover for desktop */
+    opacity: 1; /* Show on hover */
 }
 
 .copy-btn:hover {
-    background-color: #777;
+    background-color: rgba(119, 119, 119, 0.9); /* Darker on hover */
 }
 
 .copy-btn.copied {
     background-color: #28a745; /* Green when copied */
+    opacity: 1;
+}
+.copy-btn.copied:hover {
+     background-color: #218838;
+}
+
+.copy-btn i { /* Style for Font Awesome icons */
+    margin-right: 5px;
+}
+.copy-btn.copied i {
+    margin-right: 5px; /* Keep spacing consistent */
+}
+
+
+/* Chat History List */
+#chatHistory {
+    flex-grow: 1; /* Allow history to take remaining space */
+    overflow-y: auto; /* Scroll if history is long */
+    margin-bottom: 10px; /* Space before logout button */
 }
 
 .list-group-item {
-    position: relative;           /* For positioning the tooltip */
+    position: relative;
     cursor: pointer;
     background-color: #2a2a2a;
     color: #e0e0e0;
     border: 1px solid #444;
+    margin-bottom: 5px; /* Space between items */
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .list-group-item:hover {
     background-color: #3a3a3a;
 }
 
-.active-chat {
+.active-chat, .active-chat:hover {
     background-color: #0d6efd;
     color: #fff;
     border-color: #0d6efd;
 }
 
 .list-group-item .dropdown {
-    position: static;
+    position: static; /* Keep dropdown relative to item */
+    margin-left: 10px; /* Space before dropdown */
 }
 
 .list-group-item .dropdown-menu {
-    position: absolute;
-    right: 0;
-    left: auto;
+    /* Position menu relative to the button */
+     min-width: auto; /* Let content determine width */
+     background-color: #3a3a3a;
+     border-color: #555;
 }
+.list-group-item .dropdown-item {
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+}
+.list-group-item .dropdown-item:hover {
+    background-color: #555;
+    color: #fff;
+}
+
 
 .chat-name {
-    white-space: nowrap;          /* Prevent line breaks */
-    overflow: hidden;             /* Hide overflow text */
-    text-overflow: ellipsis;      /* Add ellipsis for truncated text */
-    max-width: 100%;              /* Limit width to container */
-    cursor: pointer;              /* Indicate interactivity */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1; /* Allow name to take space */
+    margin-right: 5px; /* Space between name and dropdown */
+    cursor: pointer;
 }
 
-/* Tooltip-like effect for full name on hover (web) */
+/* Remove hover tooltip, rely on title attribute */
 .chat-name:hover::after {
-    content: attr(title);         /* Use the title attribute for full name */
-    position: absolute;
-    background-color: #333;
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 3px;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    z-index: 1000;
-    top: -30px;                   /* Position above the chat name */
-    left: 50%;
-    transform: translateX(-50%);
+    display: none;
 }
+
+/* Sidebar Logout Button */
+.sidebar .mt-auto {
+    padding: 15px 10px 10px 10px; /* Padding around the logout button */
+    border-top: 1px solid #444; /* Separator line */
+    background-color: #2a2a2a; /* Match sidebar background */
+}
+#logoutBtn {
+    width: 100%; /* Make button full width */
+}
+
 
 #loading {
     display: flex;
@@ -258,7 +326,7 @@ body {
     color: #e0e0e0;
 }
 
-/* New styles for quote */
+/* Quote Styles */
 .quote {
     text-align: center;
     padding: 20px;
@@ -267,53 +335,85 @@ body {
     margin-bottom: 20px;
     color: #d0d0d0;
     font-style: italic;
+    border: 1px solid #444;
 }
 
 .quote p {
     margin: 5px 0;
     font-size: 1.1rem;
 }
-
-/* Adjust code-snippet to work with Prism.js */
-.code-snippet pre {
-    background-color: #2d2d2d;
-    padding: 10px;
-    border-radius: 5px;
-    overflow-x: auto;
+.quote p:last-child {
+    margin-top: 15px;
+    font-weight: bold;
+    font-style: normal;
 }
 
-.code-snippet code {
-    font-family: 'Courier New', Courier, monospace;
-    white-space: pre;
-    word-break: normal;
+/* Input Area Styles */
+.input-group {
+    position: relative;
+    display: flex; /* Use flex for alignment */
 }
 
-/* Styles for the send icon inside the textarea */
-.input-group .send-icon {
+#userInput {
+    flex-grow: 1; /* Textarea takes available space */
+    padding-right: 50px; /* Space for the send icon/button */
+    resize: none; /* Disable manual resizing */
+    min-height: 60px; /* Start with ~3 lines height */
+    max-height: 200px; /* Limit max height */
+    overflow-y: auto; /* Scroll if content exceeds max height */
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+#userInput::placeholder {
+    color: #888;
+}
+
+
+#sendMessage { /* Style the button instead of just the icon */
     position: absolute;
     right: 10px;
     bottom: 10px;
-    padding: 5px;
-    background: none;
+    height: 40px; /* Match textarea bottom padding */
+    width: 40px;
+    padding: 0;
+    background: #0d6efd; /* Button background */
     border: none;
-    color: #0d6efd;
+    color: #fff;
     font-size: 1.2rem;
+    border-radius: 5px; /* Rounded corners */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 10;
+    transition: background-color 0.2s ease;
 }
 
-.input-group .send-icon:hover {
-    color: #0a58ca;
+#sendMessage:hover {
+    background-color: #0a58ca;
+}
+#sendMessage i {
+    line-height: 1; /* Center icon */
 }
 
-.input-group {
-    position: relative;
+/* Share Location Button Styles */
+/* Add this style for the remove button state */
+#shareLocationBtn.btn-danger {
+    background-color: #dc3545; /* Bootstrap danger color */
+    border-color: #dc3545;
+    color: #fff;
 }
 
-/* Ensure textarea has padding to avoid overlap with the icon */
-#userInput {
-    padding-right: 40px; /* Space for the send icon */
-    resize: vertical; /* Allow vertical resizing only */
-    min-height: 60px; /* Minimum height for 3 lines */
+#shareLocationBtn.btn-danger:hover {
+    background-color: #c82333; /* Darker red on hover */
+    border-color: #bd2130;
+}
+
+/* Style for disabled button state */
+#shareLocationBtn:disabled,
+#uploadPdfBtn:disabled { /* Also apply to upload button when disabled */
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
 /* Responsive Mobile Adjustments */
@@ -325,7 +425,7 @@ body {
         width: 250px;
         height: 100%;
         transform: translateX(-100%);
-        z-index: 1000;
+        z-index: 1050; /* Ensure sidebar is above content */
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
     }
 
@@ -335,49 +435,66 @@ body {
 
     .chat-container {
         padding: 10px;
-        height: calc(100vh - 40px);
+        height: calc(100vh - 50px); /* Adjust height calculation */
+        position: relative; /* Needed for absolute positioning of show button */
+    }
+
+    #showSidebar {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000; /* Below sidebar but above content */
     }
 
     .chat-messages {
         margin-bottom: 10px;
+        padding-top: 40px; /* Add padding to avoid overlap with hamburger button */
     }
 
     .pdf-upload-area {
         margin-bottom: 5px;
+        gap: 5px; /* Reduce gap */
     }
+    .pdf-upload-area .btn {
+        font-size: 0.85rem; /* Smaller button text */
+        padding: 5px 10px;
+    }
+    #uploadedPdfs {
+         max-height: 80px; /* Reduce max height */
+    }
+
 
     .input-area {
         padding: 5px 0;
     }
 
-    #showSidebar {
-        margin-left: 10px;
-    }
-
-    #toggleSidebar {
-        margin-left: 10px;
-    }
-
-    /* Always show copy button on mobile */
-    .copy-btn {
-        display: block;
+    /* Always show copy button on mobile for easier interaction */
+    .code-snippet:hover .copy-btn, .copy-btn {
+        opacity: 1;
+        background-color: rgba(85, 85, 85, 0.9); /* Make it more visible */
     }
 
     /* Updated quote styles for mobile */
     .quote p {
-        font-size: 0.85rem;       /* Reduce font size to fit on one line */
-        white-space: nowrap;      /* Prevent text from breaking to new lines */
-        overflow: hidden;         /* Hide any overflow */
-        text-overflow: ellipsis;  /* Add ellipsis if text still overflows */
+        font-size: 0.9rem; /* Adjust font size */
+        /* Allow wrapping if needed */
+        /* white-space: nowrap; */
+        /* overflow: hidden; */
+        /* text-overflow: ellipsis; */
     }
 
     /* Mobile-specific adjustments for chat-name */
     .chat-name {
-        max-width: 150px;         /* Limit width on mobile to ensure ellipsis works */
+        max-width: calc(100% - 60px); /* Adjust width considering dropdown */
     }
 
-    /* Remove hover effect on mobile and rely on tap */
-    .chat-name:hover::after {
-        display: none;            /* Disable hover tooltip on mobile */
-    }
 }
+
+/* PrismJS Okaidia Theme adjustments */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+/* Add other Prism adjustments if needed */
