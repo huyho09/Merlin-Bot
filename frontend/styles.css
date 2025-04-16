@@ -110,8 +110,60 @@ body {
     color: #e0e0e0;
     margin-right: auto;
     align-self: flex-start; /* Align to the left */
+    /* Container adjustments if needed, handled by .message */
 }
 
+/* Styles for the reasoning section */
+.reasoning-section {
+    margin-top: 10px; /* Space above reasoning section */
+    padding-top: 10px;
+    border-top: 1px dashed #555; /* Separator line */
+}
+
+.reasoning-toggle {
+    cursor: pointer;
+    color: #a0a0a0; /* Lighter color for the toggle */
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    display: inline-block; /* Allow margin-bottom */
+    text-decoration: none; /* Remove underline from link */
+}
+
+.reasoning-toggle:hover {
+    color: #c0c0c0;
+    text-decoration: none;
+}
+
+.reasoning-content {
+    background-color: rgba(0, 0, 0, 0.1); /* Slightly darker background for reasoning */
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: #c0c0c0; /* Slightly dimmer text for reasoning */
+    overflow-x: auto; /* Handle potential horizontal overflow */
+}
+
+/* --- Bootstrap Collapse Integration --- */
+/* Ensure collapse transitions work */
+.reasoning-content.collapse {
+  display: none;
+}
+.reasoning-content.collapsing {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.35s ease;
+}
+.reasoning-content.show {
+  display: block;
+}
+/* --- End Bootstrap --- */
+
+.final-answer-section {
+     margin-top: 10px; /* Space between reasoning (if shown) and final answer */
+     /* Style final answer normally - mostly handled by .ai-message styles */
+}
+
+/* Thinking message */
 .thinking-message {
     background-color: #3a3a3a;
     color: #e0e0e0;
@@ -248,7 +300,7 @@ body {
 
 .list-group-item {
     position: relative;
-    cursor: pointer;
+    /* cursor: pointer; - applied to chat-name span instead */
     background-color: #2a2a2a;
     color: #e0e0e0;
     border: 1px solid #444;
@@ -285,6 +337,7 @@ body {
     color: #e0e0e0;
     font-size: 0.9rem;
     padding: 5px 10px;
+    cursor: pointer;
 }
 .list-group-item .dropdown-item:hover {
     background-color: #555;
@@ -409,11 +462,27 @@ body {
     border-color: #bd2130;
 }
 
+/* --- Reasoning Button Styles --- */
+/* The button starts with btn-primary class in HTML */
+/* We only need to define the style for when it's active */
+#reasoningBtn.active {
+    background-color: #dc3545; /* Bootstrap danger color */
+    border-color: #dc3545;
+    color: #fff;
+}
+/* Optional: Define hover state for the active (red) button */
+#reasoningBtn.active:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+
 /* Style for disabled button state */
 #shareLocationBtn:disabled,
-#uploadPdfBtn:disabled { /* Also apply to upload button when disabled */
+#uploadPdfBtn:disabled,
+#reasoningBtn:disabled { /* Also apply to reasoning button when disabled */
     cursor: not-allowed;
-    opacity: 0.65;
+    opacity: 0.65 !important; /* Ensure opacity override when disabled, keep standard disabled look */
 }
 
 /* Responsive Mobile Adjustments */
