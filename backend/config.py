@@ -1,5 +1,6 @@
 import os 
 from dotenv import load_dotenv
+
 load_dotenv()
 class AppConfig: 
     """
@@ -11,6 +12,7 @@ class AppConfig:
             + MAX_CONTENT_LENGTH (Limit uploads to 100MB total)
         _ Google Map API Key
     """
+    
     SECRET_KEY = os.getenv('SECRET_KEY', 'theChosenOne')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///site.db') 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
