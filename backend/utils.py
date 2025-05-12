@@ -42,7 +42,7 @@ class LocationHandle():
 
 class RestaurantHandle(): 
     """explain: Fetches nearby restaurants using the Google Maps Places API based on latitude, longitude, optional keywords, and radius."""
-    def get_restaurants(latitude, longitude, keywords=None, radius=3000):
+    def get_restaurants(latitude, longitude, keywords=None, radius=1000):
         ggmap_handle = GoogleMapService
         gmaps = ggmap_handle.getGmaps()
         if not gmaps: # Check if googlemaps client is initialized
