@@ -1,4 +1,7 @@
 from models import User
+from functools import wraps
+from flask import request, jsonify
+from models import User
 
 """explain: Decorator function to require a valid authentication token in the request header."""
 def token_required(f):

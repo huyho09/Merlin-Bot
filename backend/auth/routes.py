@@ -1,8 +1,8 @@
 from flask import request,jsonify,Blueprint
 import uuid
 from models import User
-from main import db
 from middleware import *
+from db import db
 
 auth_bp = Blueprint('auth',__name__)
 

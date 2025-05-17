@@ -262,7 +262,12 @@ class ChatApp {
                     localStorage.setItem('longitude', longitude);
                     this.updateShareLocationButtonState();
                     alert('Location shared successfully!');
-
+                    const response_address = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+                    if (!response_address.ok) {
+                        throw new Error('Failed to fetch address from OpenStreetMap');
+                    }
+                    const data = await response_address.json();
+                    document.getElementById('address-text').textContent = data.display_name
                 } catch (error) {
                     console.error('Error sharing location:', error);
                     alert('Failed to share location: ' + error.message);

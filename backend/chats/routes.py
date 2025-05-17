@@ -1,16 +1,15 @@
 from middleware import token_required
-from flask import blueprints,jsonify,request
-from main import db
+from flask import Blueprint,jsonify,request
+from db import db
 import io
 import json
 from PyPDF2 import PdfReader
 from models import Chat
 import uuid
 from utils import RestaurantHandle,parse_reasoning_response
-from main import openai_client
+from service import OpenAiService
 
-
-chats_bp = blueprints('chats',__name__)
+chats_bp = Blueprint('chats',__name__)
 
 """explain: Creates a new chat session for the authenticated user."""
 @chats_bp.route('/api/chats', methods=['POST'])
@@ -348,8 +347,9 @@ def send_message(chat_id):
             ]
 
             try:
+                open_ai_handler = OpenAiService()
                 print("Sending food recommendation request to OpenAI...")
-                response = openai_client.chat.completions.create(
+                response = open_ai_handler.getOpenAiClient().chat.completions.create(
                     model="gpt-4o", # Using gpt-4o for food recommendation
                     messages=openai_api_messages,
                     max_tokens=1024
@@ -388,7 +388,8 @@ def send_message(chat_id):
         openai_api_messages.append({"role": "user", "content": message})
 
         try:
-            response = openai_client.chat.completions.create(
+            open_ai_handler = OpenAiService()
+            response = open_ai_handler.getOpenAiClient().chat.completions.create(
                 model=openai_model,
                 messages=openai_api_messages,
                 max_tokens=4096
